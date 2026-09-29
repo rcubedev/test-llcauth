@@ -12,9 +12,20 @@ export async function sendLoginCode(email: string, code: string) {
   }
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM ?? "sign-in@auth.limelightcreatives.org",
-    to: email,
-    subject: `${code} is your verification code`,
-    text: `Your sign-in code is ${code}. It expires in 10 minutes. If you didn't request this, you can ignore this email.`,
-  });
+  from: process.env.EMAIL_FROM ?? "sign-in@auth.limelightcreatives.org",
+  to: email,
+  subject: `Your Limelight Creatives sign-in code`,
+  text: `Hi ${email},
+
+Your sign-in code is ${code}.
+
+This code expires in 10 minutes. Enter it on the sign-in page to finish logging in.
+
+If you didn't request this, you can safely ignore this email.
+
+Thanks,
+The Limelight Creatives Team
+
+(P.S. this is an unmonitored inbox and cannot receive messages! If you need to get in touch, reach out to us directly at inquiries@limelightcreatives.org)`,
+});
 }
