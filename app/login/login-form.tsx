@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, getSession } from "next-auth/react";
 import { Button } from "@/components/Button";
@@ -35,13 +35,14 @@ function sanitizeNext(next: string | null): string {
   return "https://limelightcreatives.org";
 }
 
-type Step = "email" | "code" | "name";
+type Step = "email" | "code" | "name" | "notice";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = sanitizeNext(params.get("next"));
-  const { update } = useSession();
+  const invite = params.get("invite");
+  const { update, status: authStatus } = useSession();
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -50,9 +51,71 @@ function LoginForm() {
   const [lastName, setLastName] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "checking" | "error">("idle");
   const [error, setError] = useState("");
+  const [inviteMsg, setInviteMsg] = useState("");
+
+  // The invite is redeemed at most once per page load, whichever path gets there first.
+  const redeemRef = useRef<Promise<boolean> | null>(null);
+  // Set once the person starts typing their email, so the "already signed in" shortcut stays out of the way.
+  const manualFlow = useRef(false);
+
+  function redeemInvite(): Promise<boolean> {
+    if (!invite) return Promise.resolve(true);
+    if (!redeemRef.current) {
+      redeemRef.current = (async () => {
+        try {
+          const res = await fetch("/api/auth/redeem-invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: invite }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            setInviteMsg(data.error ?? "Couldn't use that invite link.");
+            return false;
+          }
+          await update(); // refresh the session so the new role shows up straight away
+          return true;
+        } catch {
+          setInviteMsg("Couldn't use that invite link. Check your connection and try again.");
+          return false;
+        }
+      })();
+    }
+    return redeemRef.current;
+  }
+
+  // Decides what happens once the person is signed in and the invite (if any) has been tried.
+  async function finish(redeemed: boolean) {
+    if (!redeemed) {
+      setStep("notice");
+      setStatus("idle");
+      return;
+    }
+    const session = await getSession();
+    const needsProfile = Boolean((session?.user as { needsProfile?: boolean } | undefined)?.needsProfile);
+    if (needsProfile) {
+      setStep("name");
+      setStatus("idle");
+    } else {
+      router.push(next);
+    }
+  }
+
+  // Already signed in (e.g. via another Limelight service) and opened an invite link:
+  // skip the email form and just redeem.
+  useEffect(() => {
+    if (!invite || authStatus !== "authenticated" || manualFlow.current) return;
+    manualFlow.current = true;
+    (async () => {
+      setStatus("checking");
+      await finish(await redeemInvite());
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus, invite]);
 
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
+    manualFlow.current = true;
     setStatus("sending");
     setError("");
 
@@ -93,16 +156,7 @@ function LoginForm() {
       return;
     }
 
-    const needsProfile = Boolean(
-      (session.user as { needsProfile?: boolean }).needsProfile
-    );
-
-    if (needsProfile) {
-      setStep("name");
-      setStatus("idle");
-    } else {
-      router.push(next);
-    }
+    await finish(await redeemInvite());
   }
 
   async function handleCompleteProfile(e: React.FormEvent) {
@@ -126,6 +180,12 @@ function LoginForm() {
     }
   }
 
+  const inputStyle = {
+    borderColor: "var(--foreground)",
+    background: "var(--background)",
+    color: "var(--foreground)",
+    borderRadius: 0,
+  } as const;
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center px-6">
@@ -136,10 +196,12 @@ function LoginForm() {
           {step === "email" && (
             <>
               <h1 className="mb-2 text-3xl font-display font-bold" style={{ color: "var(--foreground)" }}>
-                Sign in
+                {invite ? "Join Limelight Creatives" : "Sign in"}
               </h1>
               <p className="mb-8 text-sm" style={{ color: "var(--foreground)", opacity: 0.65 }}>
-                We&rsquo;ll email you a 6-digit code.
+                {invite
+                  ? "You have been invited to join as a staff member! Enter your email and we’ll send you a 6-digit code."
+                  : "We’ll email you a 6-digit code."}
               </p>
 
               <form onSubmit={handleSendCode} className="flex flex-col gap-3">
@@ -150,15 +212,14 @@ function LoginForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="border-[2px] px-4 py-3 text-sm font-body outline-none"
-                  style={{
-                    borderColor: "var(--foreground)",
-                    background: "var(--background)",
-                    color: "var(--foreground)",
-                    borderRadius: 0,
-                  }}
+                  style={inputStyle}
                 />
-                <Button type="submit" disabled={status === "sending"} className="w-full text-center">
-                  {status === "sending" ? "Sending code…" : "Send code"}
+                <Button
+                  type="submit"
+                  disabled={status === "sending" || status === "checking"}
+                  className="w-full text-center"
+                >
+                  {status === "sending" ? "Sending code…" : status === "checking" ? "Joining…" : "Send code"}
                 </Button>
                 {error && (
                   <p className="text-sm" style={{ color: "#c0392b" }}>
@@ -188,12 +249,7 @@ function LoginForm() {
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   className="border-[2px] px-4 py-3 text-center text-lg tracking-[0.5em] outline-none font-body"
-                  style={{
-                    borderColor: "var(--foreground)",
-                    background: "var(--background)",
-                    color: "var(--foreground)",
-                    borderRadius: 0,
-                  }}
+                  style={inputStyle}
                 />
                 <Button
                   type="submit"
@@ -219,6 +275,20 @@ function LoginForm() {
             </>
           )}
 
+          {step === "notice" && (
+            <>
+              <h1 className="mb-2 text-2xl font-display font-bold" style={{ color: "var(--foreground)" }}>
+                You’re signed in
+              </h1>
+              <p className="mb-8 text-sm" style={{ color: "var(--foreground)", opacity: 0.65 }}>
+                {inviteMsg || "We couldn’t apply that invite link."}
+              </p>
+              <Button type="button" onClick={() => finish(true)} className="w-full text-center">
+                Continue
+              </Button>
+            </>
+          )}
+
           {step === "name" && (
             <>
               <h1 className="mb-2 text-2xl font-display font-bold" style={{ color: "var(--foreground)" }}>
@@ -236,12 +306,7 @@ function LoginForm() {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   className="border-[2px] px-4 py-3 text-sm font-body outline-none"
-                  style={{
-                    borderColor: "var(--foreground)",
-                    background: "var(--background)",
-                    color: "var(--foreground)",
-                    borderRadius: 0,
-                  }}
+                  style={inputStyle}
                 />
                 <input
                   type="text"
@@ -250,12 +315,7 @@ function LoginForm() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   className="border-[2px] px-4 py-3 text-sm font-body outline-none"
-                  style={{
-                    borderColor: "var(--foreground)",
-                    background: "var(--background)",
-                    color: "var(--foreground)",
-                    borderRadius: 0,
-                  }}
+                  style={inputStyle}
                 />
                 <Button type="submit" disabled={status === "checking"} className="w-full text-center">
                   {status === "checking" ? "Saving…" : "Finish"}

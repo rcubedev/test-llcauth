@@ -56,7 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : null,
           role: user.role,
-          needsProfile: !user.firstName || !user.lastName, // NEW
+          needsProfile: !user.firstName || !user.lastName,
         };
       },
     }),
@@ -69,9 +69,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as { role: string }).role;
         token.needsProfile = (user as { needsProfile: boolean }).needsProfile;
       }
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
-        token.needsProfile = false; // profile just got completed
+      if (trigger === "update") {
+        if (session?.name) {
+          token.name = session.name;
+          token.needsProfile = false; // profile just got completed
+        }
+        // Re-read the role from the database rather than trusting anything the
+        // browser sent. This is how a freshly redeemed invite shows up in the
+        // session without signing out and back in.
+        if (token.id) {
+          const fresh = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true },
+          });
+          if (fresh) token.role = fresh.role;
+        }
       }
       return token;
     },
