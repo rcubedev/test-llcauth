@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: limelight-auth
+  datasource:
+    # The database address: either the postgresql://user:password@host/db?sslmode=require form that
+    # Neon/Railway give you (see DatabaseUrl.java), or a jdbc:postgresql://... URL with DATABASE_USER and
+    # DATABASE_PASSWORD. On Neon, use the direct address, not the "-pooler" one: this app keeps its own
+    # connection pool, and database migrations need a direct connection.
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER:}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      # Connections stay open only while in use: idle ones close after a minute, so the database and the
+      # host can sleep when nobody is signing in. Neon's free plan has 100 compute-hours a month per project;
+      # a pool that never closes keeps it awake 24/7, using them up by around day 16, after which Neon
+      # suspends the database until next month. (Railway also only sleeps a service that has gone quiet.)
+      minimum-idle: 0
+      idle-timeout: 60000
+      maximum-pool-size: 5
+  flyway:
+    # The existing database was created by the old Prisma app: record it as already being at
+    # version 1 (V1__existing_schema.sql) instead of trying to create its tables again.
+    baseline-on-migrate: true
+    baseline-version: 1
+  threads:
+    virtual:
+      enabled: true
+
+# /actuator/health: {"status":"UP"} once the app is running and can reach the database. Hosts check it
+# after each deploy. Only "health" is exposed; it shows no details.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+server:
+  # Hosts like Railway say which port to listen on in PORT.
+  port: ${PORT:8080}
+  # Behind the host's proxy: trust its X-Forwarded-* headers for the visitor's IP and HTTPS.
+  forward-headers-strategy: native
+
+auth:
+  secret: ${AUTH_SECRET}
+  base-url: ${AUTH_BASE_URL:https://auth.limelightcreatives.org}
+  root-domain: ${AUTH_ROOT_DOMAIN:limelightcreatives.org}
+  cookie-domain: ${AUTH_COOKIE_DOMAIN:.limelightcreatives.org}
+  secure-cookies: true
+  default-redirect: ${AUTH_DEFAULT_REDIRECT:https://dashboard.limelightcreatives.org/}
+  session-lifetime: 30d
+  mail:
+    resend-api-key: ${RESEND_API_KEY:}
+    from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}
+    # Never print codes in production: anyone who can read the logs could sign in as anyone.
+    log-code-if-unsent: false

@@ -1,0 +1,7 @@
+auth:
+  secret: test-secret-test-secret-test-secret-123
+  mail:
+    resend-api-key: ""
+logging:
+  level:
+    org.limelightcreatives.auth.mail: warn

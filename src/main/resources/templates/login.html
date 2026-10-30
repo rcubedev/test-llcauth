@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<!--/*
+  The sign-in page. LoginController picks the step: email, code, name or notice.
+  "next" (where to go afterwards) and "invite" (an invite link's code) ride along as hidden fields.
+*/-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} ?: 'Sign in'">Sign in</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="preload" href="/fonts/classica/Classica-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/hanken-grotesk/HankenGrotesk-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/app.css">
+  <script src="/js/login.js" defer></script>
+</head>
+<body class="min-h-screen font-body antialiased">
+
+<!--/* Fragments used below */-->
+<th:block th:remove="all">
+  <svg th:fragment="sparkleIcon(classes)" th:class="${classes}" viewBox="0 0 71 112" fill="none"
+       xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M34.0842 5.00024C36.1659 32.3071 39.9734 45.0186 60.8435 53.8204C43.2615 68.9484 37.8959 81.9723 34.0842 111C31.2151 79.9997 26.929 66.1442 9.84351 53.8204C26.7067 45.9754 31.8813 35.3111 34.0842 6.0034"
+          stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+  </svg>
+
+  <!--/* The primary button. data-busy is the label shown while the form submits (login.js). */-->
+  <button th:fragment="submitButton(label, busy)" type="submit" th:attr="data-busy=${busy}" th:text="${label}"
+          class="relative w-full border-[2px] border-[var(--foreground)] bg-[var(--ontik-accent)] px-4 py-2 text-center font-display font-bold text-[var(--background)] transition-all duration-150 ease-out translate-x-0 translate-y-0 shadow-[0_0_0_0_transparent] hover:-translate-x-[2px] hover:-translate-y-[2px] hover:bg-[var(--accent)] hover:text-[var(--foreground)] hover:shadow-[6px_6px_0_0_var(--foreground)] active:translate-x-0 active:translate-y-0 active:shadow-[2px_2px_0_0_var(--foreground)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-transparent disabled:text-[var(--foreground)]">
+    Label
+  </button>
+
+  <th:block th:fragment="hiddenFields">
+    <input th:if="${next}" type="hidden" name="next" th:value="${next}">
+    <input th:if="${invite}" type="hidden" name="invite" th:value="${invite}">
+  </th:block>
+
+  <p th:fragment="errorMessage" th:if="${error}" class="text-sm text-[var(--error)]" role="alert" th:text="${error}">Error</p>
+</th:block>
+
+<main class="flex min-h-[100dvh] items-center justify-center px-6">
+  <div class="relative w-full max-w-sm">
+    <div class="absolute inset-0 translate-x-3 translate-y-3 bg-[var(--ontik-accent)] md:translate-x-4 md:translate-y-4"></div>
+
+    <div class="relative border-2 border-black bg-[var(--background)] p-8">
+
+      <th:block th:switch="${step}">
+
+        <!--/* 1. Email */-->
+        <th:block th:case="'email'">
+          <h1 class="mb-2 font-display text-3xl font-bold" th:text="${invite} ? 'Join Limelight Creatives' : 'Sign in'">Sign in</h1>
+          <p class="mb-8 text-sm opacity-65"
+             th:text="${invite} ? 'You have been invited to join as a staff member! Enter your email and we’ll send you a 6-digit code.' : 'We’ll email you a 6-digit code.'">
+            We’ll email you a 6-digit code.
+          </p>
+          <form method="post" action="/login/code" class="flex flex-col gap-3">
+            <th:block th:replace="~{:: hiddenFields}"></th:block>
+            <input type="email" name="email" required autocomplete="email" placeholder="you@example.com"
+                   th:value="${email}" aria-label="Email"
+                   class="border-[2px] border-[var(--foreground)] bg-[var(--background)] px-4 py-3 font-body text-sm outline-none">
+            <button th:replace="~{:: submitButton('Send code', 'Sending code…')}"></button>
+            <p th:replace="~{:: errorMessage}"></p>
+          </form>
+        </th:block>
+
+        <!--/* 2. Code */-->
+        <th:block th:case="'code'">
+          <h1 class="mb-2 font-display text-2xl font-bold">Enter your code</h1>
+          <p class="mb-8 text-sm opacity-65"><th:block th:text="${warning} ? 'For' : 'Sent to'">Sent to</th:block> <span th:text="${email}">you@example.com</span>. It expires in 10 minutes.</p>
+          <p th:if="${warning}" class="-mt-4 mb-6 border-2 border-dashed border-[var(--foreground)] p-3 text-xs" role="status" th:text="${warning}">Warning</p>
+          <form method="post" action="/login/verify" class="flex flex-col gap-3">
+            <th:block th:replace="~{:: hiddenFields}"></th:block>
+            <input type="hidden" name="email" th:value="${email}">
+            <input type="text" name="code" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                   autocomplete="one-time-code" placeholder="000000" aria-label="6-digit code" autofocus
+                   class="border-[2px] border-[var(--foreground)] bg-[var(--background)] px-4 py-3 text-center font-body text-lg tracking-[0.5em] outline-none">
+            <button th:replace="~{:: submitButton('Verify', 'Checking…')}"></button>
+            <p th:replace="~{:: errorMessage}"></p>
+          </form>
+          <!--/* Back to step 1, keeping where to go afterwards and the invite */-->
+          <a th:href="@{/login(next=${next}, invite=${invite})}" class="mt-3 block text-center text-xs underline opacity-60">Use a different email</a>
+        </th:block>
+
+        <!--/* 3. Name (first sign-in only) */-->
+        <th:block th:case="'name'">
+          <h1 class="mb-2 font-display text-2xl font-bold">Welcome to Limelight Creatives!</h1>
+          <p class="mb-8 text-sm opacity-65">Let us know your name and you're all set.</p>
+          <form method="post" action="/login/name" class="flex flex-col gap-3">
+            <th:block th:replace="~{:: hiddenFields}"></th:block>
+            <input type="text" name="firstName" required maxlength="100" autocomplete="given-name" placeholder="First name"
+                   th:value="${firstName}" aria-label="First name" autofocus
+                   class="border-[2px] border-[var(--foreground)] bg-[var(--background)] px-4 py-3 font-body text-sm outline-none">
+            <input type="text" name="lastName" required maxlength="100" autocomplete="family-name" placeholder="Last name"
+                   th:value="${lastName}" aria-label="Last name"
+                   class="border-[2px] border-[var(--foreground)] bg-[var(--background)] px-4 py-3 font-body text-sm outline-none">
+            <button th:replace="~{:: submitButton('Finish', 'Saving…')}"></button>
+            <p th:replace="~{:: errorMessage}"></p>
+          </form>
+        </th:block>
+
+        <!--/* Signed in, but the invite couldn't be used */-->
+        <th:block th:case="'notice'">
+          <h1 class="mb-2 font-display text-2xl font-bold">You’re signed in</h1>
+          <p class="mb-8 text-sm opacity-65" th:text="${notice} ?: 'We couldn’t apply that invite link.'">Notice</p>
+          <a th:href="@{/login(next=${next})}"
+             class="block w-full border-[2px] border-[var(--foreground)] bg-[var(--ontik-accent)] px-4 py-2 text-center font-display font-bold text-[var(--background)] transition-all duration-150 ease-out hover:-translate-x-[2px] hover:-translate-y-[2px] hover:bg-[var(--accent)] hover:text-[var(--foreground)] hover:shadow-[6px_6px_0_0_var(--foreground)]">Continue</a>
+        </th:block>
+      </th:block>
+
+      <svg th:replace="~{:: sparkleIcon('pointer-events-none absolute -top-12 -right-10 h-14 w-9 rotate-[16deg] text-[var(--ontik-accent)]')}"></svg>
+      <svg th:replace="~{:: sparkleIcon('pointer-events-none absolute -top-8 right-0 h-6 w-4 rotate-[-6deg] text-[#1B2340]')}"></svg>
+      <svg th:replace="~{:: sparkleIcon('pointer-events-none absolute -bottom-10 -left-5 h-9 w-6 rotate-[-15deg] text-[#1B2340]')}"></svg>
+    </div>
+  </div>
+</main>
+</body>
+</html>

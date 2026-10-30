@@ -1,0 +1,8 @@
+# Keep line endings right on every OS: Linux/macOS and Docker need gradlew with LF, Windows needs gradlew.bat with CRLF.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.ico binary
+*.woff binary
+*.woff2 binary

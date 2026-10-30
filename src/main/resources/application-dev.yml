@@ -1,0 +1,26 @@
+# Running locally (./gradlew bootTestRun or bootRun): http://localhost:8080, plain-HTTP cookies.
+#
+# Login codes are printed to the console. To get real emails instead, set RESEND_API_KEY before running.
+# With a new Resend account you can only send from onboarding@resend.dev to the address you signed up
+# with; set EMAIL_FROM to an address on a domain you've verified in Resend to email anyone.
+spring:
+  datasource:
+    # bootRun: a PostgreSQL you run yourself. (bootTestRun starts its own and overrides this.)
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/auth}
+    username: ${DATABASE_USER:auth}
+    password: ${DATABASE_PASSWORD:auth}
+
+auth:
+  secret: ${AUTH_SECRET:dev-only-secret-dev-only-secret-dev-only}
+  base-url: http://localhost:8080
+  root-domain: localhost
+  cookie-domain: ""
+  secure-cookies: false
+  # After sign-in without a ?next=, show who you're signed in as. With the dashboard running locally on
+  # port 3000, sign in from it (it sends ?next=http://localhost:3000/...) and you'll go back there instead.
+  default-redirect: http://localhost:8080/account
+  mail:
+    resend-api-key: ${RESEND_API_KEY:}
+    from: ${EMAIL_FROM:onboarding@resend.dev}
+    # If Resend refuses an email (e.g. a new account sending to someone else), print the code too.
+    log-code-if-unsent: true
