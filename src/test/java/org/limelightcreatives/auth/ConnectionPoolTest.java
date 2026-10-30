@@ -8,7 +8,7 @@ import javax.sql.DataSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Idle connections must close, or Neon and Railway never sleep (and Neon's free compute hours run out). */
+/** Idle connections must close, or Neon never sleeps (and Neon's free compute hours run out). */
 class ConnectionPoolTest extends DatabaseTest {
 
     @Autowired DataSource dataSource;

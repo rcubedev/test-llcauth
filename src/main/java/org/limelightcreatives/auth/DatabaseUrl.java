@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Lets DATABASE_URL be the address Neon, Railway etc. give you,
+ * Lets DATABASE_URL be the address Neon and similar hosts give you,
  * {@code postgresql://user:password@host/db?sslmode=require}, as the old app used it. Java's
  * driver wants {@code jdbc:postgresql://host/db?sslmode=require} with the user and password
  * separate, so this splits it up. A {@code jdbc:} URL is left as it is.

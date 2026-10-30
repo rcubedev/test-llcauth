@@ -3,7 +3,7 @@ spring:
     name: limelight-auth
   datasource:
     # The database address: either the postgresql://user:password@host/db?sslmode=require form that
-    # Neon/Railway give you (see DatabaseUrl.java), or a jdbc:postgresql://... URL with DATABASE_USER and
+    # Neon gives you (see DatabaseUrl.java), or a jdbc:postgresql://... URL with DATABASE_USER and
     # DATABASE_PASSWORD. On Neon, use the direct address, not the "-pooler" one: this app keeps its own
     # connection pool, and database migrations need a direct connection.
     url: ${DATABASE_URL}
@@ -13,7 +13,7 @@ spring:
       # Connections stay open only while in use: idle ones close after a minute, so the database and the
       # host can sleep when nobody is signing in. Neon's free plan has 100 compute-hours a month per project;
       # a pool that never closes keeps it awake 24/7, using them up by around day 16, after which Neon
-      # suspends the database until next month. (Railway also only sleeps a service that has gone quiet.)
+      # suspends the database until next month.
       minimum-idle: 0
       idle-timeout: 60000
       maximum-pool-size: 5
@@ -27,7 +27,7 @@ spring:
       enabled: true
 
 # /actuator/health: {"status":"UP"} once the app is running and can reach the database. Hosts check it
-# after each deploy. Only "health" is exposed; it shows no details.
+# after each deploy, and you can use it to check a deploy by hand. Only "health" is exposed; it shows no details.
 management:
   endpoints:
     web:
@@ -35,7 +35,7 @@ management:
         include: health
 
 server:
-  # Hosts like Railway say which port to listen on in PORT.
+  # Hosts say which port to listen on in PORT (on Vercel, set it to 8080 yourself).
   port: ${PORT:8080}
   # Behind the host's proxy: trust its X-Forwarded-* headers for the visitor's IP and HTTPS.
   forward-headers-strategy: native

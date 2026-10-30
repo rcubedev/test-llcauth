@@ -153,71 +153,56 @@ redirect checks, and starting up on a database created by the old app.
 - **Docker image builds**: builds the `Dockerfile` (without publishing it), so a change that would break a
   deploy fails here first.
 
-`.github/workflows/deploy.yml` deploys to Railway: to **staging** after every push to `main` that passes the
-Build workflow, and to **production** when you run it by hand (Actions > Deploy > Run workflow). Each one skips
-with a note until its GitHub environment has a `RAILWAY_TOKEN` secret (below). For another host, swap the
-`railway up` line for that host's deploy command: the Dockerfile runs anywhere that runs containers.
+Deploys aren't in GitHub Actions: Vercel builds and deploys straight from GitHub (below).
 
-## Deploying (Railway + Neon)
+## Deploying (Vercel + Neon)
 
-Staging and production are the same Railway service in two Railway environments, built from the same
-`Dockerfile` with the same settings; only the environment variables differ. Staging is the free test copy;
-production comes later, when the real site switches over.
+Vercel runs the `Dockerfile` as a Vercel Function ([Container Runtime](https://vercel.com/docs/functions/runtimes/container),
+in beta), in Sydney (`vercel.json`). Every push to `main` deploys to production; every other branch and pull request
+gets its own preview deployment. For another host, the Dockerfile runs anywhere that runs containers.
 
-**Cost.** Staging fits Railway's free plan ($1 of usage a month, 0.5 GB of memory) because it sleeps: with
-**Serverless** on, Railway stops it after about 10 minutes without traffic, and the next visit wakes it (the
-first page takes a few seconds, sometimes a "try again" error while it starts). Neon's free plan also sleeps
-the database after 5 minutes and gives each project 100 compute-hours a month. Both only sleep once the app
-has closed its idle database connections, which it does after a minute (`spring.datasource.hikari` in
-`application.yml`; `ConnectionPoolTest` keeps it that way). Production needs Railway Hobby ($5 a month,
-which includes $5 of usage) with Serverless off, so sign-in is never slow.
+**Cost.** Free on the Hobby plan for testing: Vercel only bills while a request is being handled, and scales to zero
+after 5 minutes without traffic, so the next visit waits a few seconds while Spring Boot starts. Neon's free plan
+sleeps the database after 5 minutes too, and gives each project 100 compute-hours a month. The database only sleeps
+once the app has closed its idle connections, which it does after a minute (`spring.datasource.hikari` in
+`application.yml`; `ConnectionPoolTest` keeps it that way).
 
 ### Database (Neon)
 
-Create a **separate Neon project** for staging (Neon's free hours are per project, and the test copy should
-never touch real accounts). Copy its connection string: the direct one, not "pooled". Production uses the
-existing Neon database, which the app picks up as is (see [Switching over](#switching-over-from-the-old-app)).
+Create a **separate Neon project** in **AWS Sydney** (`ap-southeast-2`), next to the app, so the test copy never
+touches real accounts. Copy its connection string with pooling off (the direct one).
 
-### App (Railway)
+### App (Vercel)
 
-1. New Project > **Empty Project**, then + Create > **Empty Service**, named `auth` (if you name it something
-   else, add a GitHub variable `RAILWAY_SERVICE` with the name). Don't connect the GitHub repo: the deploy
-   workflow uploads each commit after the tests pass.
-2. Rename the environment Railway created to `staging` (Project Settings > Environments). Production gets added
-   later as a second environment.
-3. In the service's **Settings**:
-   - **Networking**: Generate Domain (gives `https://<something>.up.railway.app`).
-   - **Deploy > Healthcheck Path**: `/actuator/health`. Railway only switches to a new deploy once it answers,
-     so a broken deploy never replaces a working one.
-   - **Deploy > Serverless**: on for staging, off for production.
-   - Leave the build settings alone: Railway finds the `Dockerfile` and sets `PORT` itself.
-4. **Variables** for staging:
+1. Add New > Project > import this GitHub repo. Vercel picks the Container preset from `vercel.json`.
+2. Before deploying, add the **Environment Variables**:
 
    | Variable | Value |
    | --- | --- |
-   | `DATABASE_URL` | the staging Neon connection string |
+   | `PORT` | `8080` (Vercel sends traffic to port 80 unless told otherwise, and the app runs as a non-root user that can't use 80) |
+   | `DATABASE_URL` | the Neon connection string |
    | `AUTH_SECRET` | `openssl rand -base64 48` (a different one from production) |
-   | `AUTH_BASE_URL` | `https://<something>.up.railway.app` |
-   | `AUTH_ROOT_DOMAIN` | `<something>.up.railway.app` |
-   | `AUTH_COOKIE_DOMAIN` | *(empty: the test copy keeps its cookie to itself, away from the real site's)* |
-   | `AUTH_DEFAULT_REDIRECT` | `https://<something>.up.railway.app/account` |
-   | `RESEND_API_KEY` | optional; without it, codes appear in the service's Deploy Logs |
+   | `AUTH_BASE_URL` | `https://<project>.vercel.app` |
+   | `AUTH_ROOT_DOMAIN` | `<project>.vercel.app` |
+   | `AUTH_COOKIE_DOMAIN` | `<project>.vercel.app` (if left unset, it's the real `.limelightcreatives.org`, which browsers reject here) |
+   | `AUTH_DEFAULT_REDIRECT` | `https://<project>.vercel.app/account` |
+   | `RESEND_API_KEY` | optional; without it, codes appear in the project's Logs |
 
-   Production leaves `AUTH_BASE_URL`, `AUTH_ROOT_DOMAIN`, `AUTH_COOKIE_DOMAIN` and `AUTH_DEFAULT_REDIRECT` unset
-   (the defaults are the real addresses), needs `RESEND_API_KEY`, and gets `auth.limelightcreatives.org` as a
-   custom domain under Networking.
+   `<project>.vercel.app` is the production domain shown on the project page after the first deploy. If you only know
+   it then, deploy, set the variables, and redeploy (Deployments > ... > Redeploy).
 
-### Deploys from GitHub
+Then open `https://<project>.vercel.app/login`, sign in, and you land on `/account`. To make yourself staff, run the
+SQL from [Staff and admin accounts](#staff-and-admin-accounts) in Neon's SQL editor.
 
-1. In Railway: Project Settings > **Tokens** > create a project token for the `staging` environment.
-2. In GitHub: Settings > **Environments** > New environment `staging` > add a secret `RAILWAY_TOKEN` with it.
+Preview deployments get their own addresses, so the `AUTH_*` addresses above only match production. To sign in on a
+preview, add the same variables with that preview's address for the Preview environment, or just test on `main`.
 
-From then on every push to `main` that passes the Build workflow is deployed to staging. Production later is
-the same two steps with `production`; in GitHub you can also add yourself as a required reviewer on that
-environment so a production deploy waits for your approval.
+### Production
 
-Then open `https://<something>.up.railway.app/login`, sign in, and you land on `/account`. To make yourself
-staff, run the SQL from [Staff and admin accounts](#staff-and-admin-accounts) in Neon's SQL editor.
+The real switch-over is the existing Vercel project for `auth.limelightcreatives.org`: set its framework to Container
+(Settings > Build and Deployment, or this repo's `vercel.json`), add `PORT=8080`, `AUTH_SECRET` and `RESEND_API_KEY`,
+set `DATABASE_URL` to the database's **direct** address (the old app's `DIRECT_URL`), and leave the other `AUTH_*`
+variables unset (the defaults are the real addresses). The domain and DNS stay as they are.
 
-Staging can't share a sign-in with the real dashboard: that needs it on `auth.limelightcreatives.org`
-with the shared cookie domain, which is what production does.
+Staging can't share a sign-in with the real dashboard: that needs it on `auth.limelightcreatives.org` with the shared
+cookie domain, which is what production does.

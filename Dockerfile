@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Builds and runs the app: docker build -t limelight-auth . && docker run -p 8080:8080 --env-file .env limelight-auth
-# (Railway and similar hosts build this file themselves.)
+# (Vercel and similar hosts build this file themselves.)
 
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app

@@ -30,7 +30,7 @@ jobs:
 
   docker:
     name: Docker image builds
-    # What a host (Railway, or any other) builds when deploying, so a broken Dockerfile shows up here first.
+    # What a host (Vercel, or any other) builds when deploying, so a broken Dockerfile shows up here first.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
