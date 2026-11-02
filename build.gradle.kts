@@ -37,13 +37,43 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-database-postgresql")
+
+    runtimeOnly("org.postgresql:postgresql")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("io.zonky.test:embedded-postgres:2.2.2") { exclude(group = "io.zonky.test.postgres") }
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
+}
+
+val embeddedPostgresBinaries = providers.systemProperty("os.name")
+    .zip(providers.systemProperty("os.arch")) { osName, osArch ->
+        val os = osName.lowercase().let {
+            when {
+                "mac" in it -> "darwin"
+                "win" in it -> "windows"
+                "linux" in it -> "linux"
+                else -> null
+            }
+        }
+        val cpu = when (osArch.lowercase()) {
+            "amd64", "x86_64" -> "amd64"
+            "aarch64", "arm64" -> "arm64v8"
+            else -> null
+        }
+        val platform = "$os-$cpu"
+        val published = setOf("darwin-amd64", "darwin-arm64v8", "windows-amd64", "linux-amd64", "linux-arm64v8")
+        listOfNotNull(platform.takeIf { it in published })
+            .map { dependencies.create("io.zonky.test.postgres:embedded-postgres-binaries-$it:18.6.0") }
+    }
+configurations.testRuntimeOnly {
+    dependencies.addAllLater(embeddedPostgresBinaries)
 }
 
 sourceSets.main {
