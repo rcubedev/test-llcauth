@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: limelight-auth
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
