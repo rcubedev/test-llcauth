@@ -1,10 +1,8 @@
 package org.limelightcreatives.auth;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class AuthAppTests {
+class AuthAppTests extends DatabaseTest {
 
     @Test
     void contextLoads() {}

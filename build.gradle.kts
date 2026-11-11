@@ -89,6 +89,10 @@ tasks.test {
     jvmArgs("-Xshare:off")
 }
 
+tasks.bootRun {
+    systemProperty("spring.profiles.active", "dev")
+}
+
 /**
  * Adds the given [jar] as a java agent using the `-javaagent:<jar>` JVM argument
  *

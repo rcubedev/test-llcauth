@@ -1,0 +1,45 @@
+package org.limelightcreatives.auth;
+
+import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
+
+public final class TestPostgres {
+
+    private static final String EXTERNAL = System.getenv("TEST_DATABASE_URL");
+    private static EmbeddedPostgres forTests;
+
+    private TestPostgres() {}
+
+    public static synchronized String jdbcUrl() {
+        if (EXTERNAL != null) return EXTERNAL;
+        if (forTests == null) forTests = start(EmbeddedPostgres.builder());
+        return forTests.getJdbcUrl("postgres", "postgres");
+    }
+
+    public static String persistent(Path dataDirectory, int port) {
+        EmbeddedPostgres postgres = start(EmbeddedPostgres.builder()
+                .setDataDirectory(dataDirectory)
+                .setCleanDataDirectory(false)
+                .setPort(port));
+        return postgres.getJdbcUrl("postgres", "postgres");
+    }
+
+    private static EmbeddedPostgres start(EmbeddedPostgres.Builder builder) {
+        try {
+            EmbeddedPostgres postgres = builder.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    postgres.close();
+                } catch (IOException ignored) {
+                    // shutting down anyway
+                }
+            }));
+            return postgres;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Couldn't start PostgreSQL", e);
+        }
+    }
+}
