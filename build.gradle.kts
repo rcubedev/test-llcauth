@@ -78,7 +78,7 @@ configurations.testRuntimeOnly {
 
 sourceSets.main {
     tailwind {
-        content.from("src/main/resources/templates", "src/main/resources/static/js", "src/main/java")
+        content.from("src/main/resources/templates", "src/main/resources/static/js")
     }
 }
 
