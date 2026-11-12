@@ -39,15 +39,15 @@ class ExistingDatabaseTest {
 
         String base = TestPostgres.jdbcUrl();
         String url = base + (base.contains("?") ? "&" : "?") + "currentSchema=" + SCHEMA;
-        app = new SpringApplicationBuilder(AuthApp.class)
+        this.app = new SpringApplicationBuilder(AuthApp.class)
                 .web(WebApplicationType.NONE)
                 .profiles("test")
-                .run("--spring.datasource.url=" + url, "--spring.flyway.schemas=" + SCHEMA);
+                .run("--server.port=0", "--spring.datasource.url=" + url, "--spring.flyway.schemas=" + SCHEMA);
     }
 
     @AfterAll
     static void stop() {
-        if (app != null) app.close();
+        if (this.app != null) this.app.close();
     }
 
     @Test
@@ -66,7 +66,7 @@ class ExistingDatabaseTest {
     }
 
     private static JdbcClient db() {
-        return app.getBean(JdbcClient.class);
+        return this.app.getBean(JdbcClient.class);
     }
 
     private static String resource(String name) throws IOException {

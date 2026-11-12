@@ -8,6 +8,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @AutoConfigureMockMvc
@@ -18,7 +19,7 @@ public class HealthTest extends DatabaseTest {
 
     @Test
     void updateWithoutDetails() throws Exception {
-        MockHttpServletResponse response = mvc.perform(get("/actuator/health")).andReturn().getResponse();
+        MockHttpServletResponse response = this.mvc.perform(get("/actuator/health")).andReturn().getResponse();
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getContentAsString())
                 .contains("\"status\":\"UP\"")
@@ -28,7 +29,7 @@ public class HealthTest extends DatabaseTest {
     @Test
     void nothingElseIsExposed() throws Exception {
         for (String path : new String[]{"/actuator/env", "/actuator/beans", "/actuator/configprops", "/actuator/heapdump"}) {
-            assertThat(mvc.perform(get(path)).andReturn().getResponse().getStatus()).as(path).isEqualTo(404);
+            assertThat(this.mvc.perform(get(path).with(user("sam"))).andReturn().getResponse().getStatus()).as(path).isEqualTo(404);
         }
     }
 }

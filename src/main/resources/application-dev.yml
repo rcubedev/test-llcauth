@@ -5,6 +5,11 @@ spring:
     password: ${DATABASE_PASSWORD:auth}
 
 auth:
+  base-url: http://localhost:8080
+  root-domain: localhost
+  cookie-domain: ""
+  secure-cookies: false
+  default-redirect: http://localhost:8080/account
   mail:
     from: ${EMAIL_FROM:onboarding@resend.dev}
     log-code-if-unsent: true

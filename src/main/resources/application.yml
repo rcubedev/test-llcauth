@@ -27,6 +27,12 @@ server:
   forward-headers-strategy: native
 
 auth:
+  base-url: ${AUTH_BASE_URL:https://auth.limelightcreatives.org}
+  root-domain: ${AUTH_ROOT_DOMAIN:limelightcreatives.org}
+  cookie-domain: ${AUTH_COOKIE_DOMAIN:.limelightcreatives.org}
+  secure-cookies: true
+  default-redirect: ${AUTH_DEFAULT_REDIRECT:https://auth.limelightcreatives.org/account}
+  session-lifetime: 30d
   mail:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}
