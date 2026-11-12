@@ -17,6 +17,12 @@ spring:
     jdbc:
       initialize-schema: never
       cleanup-cron: "0 0 * * * *"
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 365d
+          cache-public: true
   threads:
     virtual:
       enabled: true

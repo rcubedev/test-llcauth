@@ -1,0 +1,14 @@
+<!--/* @thymesVar id="status" type="java.lang.Integer" */-->
+
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Something went wrong', ~{::content})}">
+<th:block th:fragment="content">
+    <h1 class="mb-2 font-display text-2xl font-bold" th:text="${status == 404} ? 'Page not found' : 'Something went wrong'">
+        Something went wrong
+    </h1>
+    <p class="mb-8 text-sm opacity-65"
+       th:text="${status == 404} ? 'There’s nothing at this address.' : 'Please try again. If it keeps happening, reach out to us at inquiries@limelightcreatives.org.'">
+        Please try again.
+    </p>
+    <a th:replace="~{fragments/button :: link(@{/login}, 'Back to sign in')}"></a>
+</th:block>
+</html>

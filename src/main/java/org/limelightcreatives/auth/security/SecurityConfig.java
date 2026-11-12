@@ -9,6 +9,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 
 @Configuration
 public class SecurityConfig {
@@ -24,9 +30,25 @@ public class SecurityConfig {
     }
 
     @Bean
+    SecurityContextRepository securityContextRepository() {
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(), new HttpSessionSecurityContextRepository());
+    }
+
+    @Bean
+    RequestCache requestCache() {
+        HttpSessionRequestCache cache = new HttpSessionRequestCache();
+        //noinspection DataFlowIssue spring supports null here
+        cache.setMatchingRequestParameterName(null);
+        return cache;
+    }
+
+    @Bean
     @Order(2)
-    SecurityFilterChain app(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(requests ->
+    SecurityFilterChain app(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache) {
+        http.securityContext(context -> context.securityContextRepository(contexts))
+                .requestCache(cache -> cache.requestCache(requestCache))
+                .authorizeHttpRequests(requests ->
                         requests.requestMatchers(PUBLIC)
                                 .permitAll()
                                 .anyRequest().authenticated())
