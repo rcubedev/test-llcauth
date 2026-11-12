@@ -25,3 +25,9 @@ management:
 server:
   port: ${PORT:8080}
   forward-headers-strategy: native
+
+auth:
+  mail:
+    resend-api-key: ${RESEND_API_KEY:}
+    from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}
+    log-code-if-unsent: false

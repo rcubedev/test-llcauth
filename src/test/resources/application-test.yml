@@ -1,3 +1,7 @@
+auth:
+  mail:
+    resend-api-key: ""
 logging:
   level:
     org.flywaydb: warn
+    org.limelightcreatives.auth.mail: warn

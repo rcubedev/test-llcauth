@@ -3,3 +3,8 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/auth}
     username: ${DATABASE_USER:auth}
     password: ${DATABASE_PASSWORD:auth}
+
+auth:
+  mail:
+    from: ${EMAIL_FROM:onboarding@resend.dev}
+    log-code-if-unsent: true
