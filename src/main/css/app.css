@@ -1,0 +1,78 @@
+@import "tailwindcss" source(none);
+
+@source("../resources/templates")
+@source("../resources/static/js")
+
+/* fonts */
+@font-face {
+    font-family: "Classica";
+    src: url("/fonts/classica/Classica-Book.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Classica";
+    src: url("/fonts/classica/Classica-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Hanken Grotesk";
+    src: url("/fonts/hanken-grotesk/HankenGrotesk-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Hanken Grotesk";
+    src: url("/fonts/hanken-grotesk/HankenGrotesk-SemiBold.woff2") format("woff2");
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Hanken Grotesk";
+    src: url("/fonts/hanken-grotesk/HankenGrotesk-Bold.woff2") format("woff2");
+    font-weight: 900;
+    font-display: swap;
+}
+
+@theme {
+    --font-display: "Classica", ui-serif, Georgia, serif;
+    --font-body: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* light theme */
+:root {
+    --background: #fffdf5;
+    --foreground: #202c44;
+
+    --accent: #9fc031;
+    --ontik-accent: #01995C;
+
+    --error: #c0392b;
+}
+
+/* base */
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    letter-spacing: 0.04em;
+
+    --d: 1px;
+
+    background-image: radial-gradient(
+            circle at var(--d) var(--d),
+            var(--foreground) calc(var(--d) - 1px),
+            transparent var(--d)
+    );
+
+    background-size: 25px, 25px;
+}
+
+.field {
+    @apply border-2 border-[var(--foreground)] bg-[var(--background)] px-4 py-3 font-body text-sm outline-none;
+}
