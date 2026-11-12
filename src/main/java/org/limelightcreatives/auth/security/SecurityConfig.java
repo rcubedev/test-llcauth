@@ -1,5 +1,8 @@
 package org.limelightcreatives.auth.security;
 
+import org.limelightcreatives.auth.login.LoginCodes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -23,6 +26,7 @@ public class SecurityConfig {
             "/", "/login", "/login/code", "/error", "/actuator/health",
             "/css/**", "/js/**", "/fonts/**", "/favicon.ico"
     };
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
     AuthenticationManager authenticationManager(EmailCodeAuthenticationProvider emailCodes) {
@@ -45,7 +49,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    SecurityFilterChain app(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache) {
+    SecurityFilterChain app(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache, LoginCodes loginCodes) {
         http.securityContext(context -> context.securityContextRepository(contexts))
                 .requestCache(cache -> cache.requestCache(requestCache))
                 .authorizeHttpRequests(requests ->
@@ -55,7 +59,8 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")));
+                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
+                .logout(logout -> logout.logoutSuccessUrl("/login"));
         return http.build();
     }
 }

@@ -1,0 +1,17 @@
+<!--/* @thymesVar id="user" type="org.limelightcreatives.auth.user.User" */-->
+
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Account', ~{::content})}">
+<th:block th:fragment="content">
+    <h1 class="mb-2 font-display text-2xl font-bold">You’re signed in</h1>
+    <p class="mb-8 text-sm opacity-65">
+        <span th:text="${user.name()}">Sam Lee</span>
+        <br>
+        <span th:text="${user.email()}">sam@example.com</span>
+    </p>
+    <p class="mb-8 text-sm">Role: <strong th:text="${#strings.capitalize(#strings.toLowerCase(user.role().name()))}">Staff</strong></p>
+
+    <form method="post" th:action="@{/logout}">
+        <button th:replace="~{fragments/button :: submit('Sign out', 'Signing out…')}"></button>
+    </form>
+</th:block>
+</html>
