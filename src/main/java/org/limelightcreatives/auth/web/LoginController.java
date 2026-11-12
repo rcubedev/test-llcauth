@@ -37,6 +37,7 @@ public class LoginController {
     static final String EMAIL = "login.email";
 
     static final String WRONG_CODE = "That code didn't work. Check it and try again.";
+    static final int MAX_NAME_LENGTH = 100;
 
     private final SignIn signIn;
     private final AuthenticationManager authentication;
@@ -147,7 +148,28 @@ public class LoginController {
             user = this.users.findById(user.get().id());
             saveSignIn(EmailCodeAuthenticationProvider.signedIn(user.orElseThrow()), request, response);
         }
+        if (user.orElseThrow().needsProfile()) return "redirect:/login/name";
         return "redirect:" + destination(request, response);
+    }
+
+    @GetMapping("/login/name")
+    public String nameForm(Principal principal) {
+        boolean named = this.users.findById(principal.getName()).map(user -> !user.needsProfile()).orElse(false);
+        return named ? "redirect:/login/continue" : "login/name";
+    }
+
+    @PostMapping("/login/name")
+    public String saveName(@RequestParam String firstName, @RequestParam String lastName, Principal principal, Model model) {
+        String first = firstName.strip();
+        String last = lastName.strip();
+        if (first.isEmpty() || last.isEmpty() || first.length() > MAX_NAME_LENGTH || last.length() > MAX_NAME_LENGTH) {
+            model.addAttribute("error", "First and last name are required");
+            model.addAttribute("firstName", first);
+            model.addAttribute("lastName", last);
+            return "login/name";
+        }
+        this.users.updateName(principal.getName(), first, last);
+        return "redirect:/login/continue";
     }
 
     String destination(HttpServletRequest request, HttpServletResponse response) {

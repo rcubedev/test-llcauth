@@ -36,16 +36,16 @@ public class LoginFlowTest extends DatabaseTest {
 
     @Test
     void signingInGoesToNext() throws Exception {
-        var visitor = new Visitor(this.mvc);
+        Visitor visitor = new Visitor(this.mvc);
         String next = DASHBOARD + "participant";
 
         assertThat(body(visitor.get("/login", "next", next))).contains("Sign in", "We’ll email you a 6-digit code.");
 
-        var sent = visitor.post("/login", "email", "  Sam@Example.com ");
+        MvcResult sent = visitor.post("/login", "email", "  Sam@Example.com ");
         assertThat(location(sent)).isEqualTo("/login/code");
         assertThat(body(visitor.follow(sent))).contains("Enter your code", "<span>sam@example.com</span>");
 
-        var verified = visitor.post("/login/code", "code", this.mailer.lastCodeFor(EMAIL));
+        MvcResult verified = visitor.post("/login/code", "code", this.mailer.lastCodeFor(EMAIL));
         assertThat(location(verified)).isEqualTo("/login/continue");
         named(EMAIL);
         assertThat(location(visitor.follow(verified))).isEqualTo(next);
@@ -77,6 +77,57 @@ public class LoginFlowTest extends DatabaseTest {
         new Visitor(this.mvc).signIn(EMAIL, this.mailer);
         assertThat(this.db.sql("SELECT max_inactive_interval FROM spring_session").query(Integer.class).single())
                 .isEqualTo(30 * 24 * 60 * 60);
+    }
+
+    @Test
+    void theFirstSignInAsksForANameThenGoesOn() throws Exception {
+        Visitor visitor = new Visitor(mvc);
+        String next = DASHBOARD + "participant";
+        visitor.get("/login", "next", next);
+
+        MvcResult continued = visitor.follow(visitor.signIn(EMAIL, mailer));
+        assertThat(location(continued)).isEqualTo("/login/name");
+        assertThat(body(visitor.follow(continued))).contains("Welcome to Limelight Creatives!");
+
+        MvcResult named = visitor.post("/login/name", "firstName", " Sam ", "lastName", "Lee");
+        assertThat(location(visitor.follow(named))).isEqualTo(next);
+        assertThat(db.sql("SELECT \"firstName\" || ' ' || \"lastName\" FROM \"users\"").query(String.class).single())
+                .isEqualTo("Sam Lee");
+    }
+
+    @Test
+    void theNameIsRequired() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+
+        assertThat(body(visitor.post("/login/name", "firstName", "  ", "lastName", "Lee")))
+                .contains("First and last name are required", "value=\"Lee\"");
+        assertThat(body(visitor.post("/login/name", "firstName", "x".repeat(101), "lastName", "Lee")))
+                .contains("First and last name are required");
+        assertThat(this.db.sql("SELECT \"firstName\" FROM \"users\"").query(String.class).optional()).isEmpty();
+    }
+
+    @Test
+    void theOldDashboardsNameStepStillWorks() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+        MvcResult result = visitor.follow(visitor.get("/login", "step", "name"));
+        assertThat(location(result)).isEqualTo("/login/name");
+    }
+
+    @Test
+    void peopleWithANameSkipTheNameStep() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+        named(EMAIL);
+        assertThat(location(visitor.get("/login/name"))).isEqualTo("/login/continue");
+    }
+
+    @Test
+    void savingANameNeedsASignIn() throws Exception {
+        MvcResult result = new Visitor(this.mvc).post("/login/name", "firstName", "Sam", "lastName", "Lee");
+        assertThat(location(result)).endsWith("/login");
+        assertThat(this.db.sql("SELECT count(*) FROM \"users\"").query(Integer.class).single()).isZero();
     }
 
     @Test
