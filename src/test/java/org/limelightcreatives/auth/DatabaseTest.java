@@ -17,7 +17,7 @@ public abstract class DatabaseTest {
 
     static final String TABLES = """
             "users", "verification_codes", "rate_limit_events", "invite_links", "invite_redemptions",
-            spring_session
+            spring_session, oauth2_registered_client, oauth2_authorization, oauth2_authorization_consent
             """;
 
     @DynamicPropertySource
