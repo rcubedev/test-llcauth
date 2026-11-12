@@ -16,7 +16,8 @@ import org.springframework.test.context.DynamicPropertySource;
 public abstract class DatabaseTest {
 
     static final String TABLES = """
-            "users", "verification_codes", "rate_limit_events", "invite_links", "invite_redemptions"
+            "users", "verification_codes", "rate_limit_events", "invite_links", "invite_redemptions",
+            spring_session
             """;
 
     @DynamicPropertySource
