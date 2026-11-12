@@ -44,6 +44,9 @@ auth:
   secure-cookies: true
   default-redirect: ${AUTH_DEFAULT_REDIRECT:https://auth.limelightcreatives.org/account}
   session-lifetime: 30d
+  oauth:
+    jwt-key: ${AUTH_JWT_KEY:}
+    generate-jwt-key: false
   mail:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}

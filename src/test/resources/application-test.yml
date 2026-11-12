@@ -1,4 +1,6 @@
 auth:
+  oauth:
+    generate-jwt-key: true
   mail:
     resend-api-key: ""
 logging:

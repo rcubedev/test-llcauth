@@ -10,6 +10,8 @@ auth:
   cookie-domain: ""
   secure-cookies: false
   default-redirect: http://localhost:8080/account
+  auth:
+    generate-jwt-key: true
   mail:
     from: ${EMAIL_FROM:onboarding@resend.dev}
     log-code-if-unsent: true
