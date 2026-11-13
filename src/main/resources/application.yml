@@ -59,3 +59,4 @@ auth:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}
     log-code-if-unsent: false
+    log-codes-without-key: false

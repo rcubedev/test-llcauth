@@ -20,3 +20,4 @@ auth:
   mail:
     from: ${EMAIL_FROM:onboarding@resend.dev}
     log-code-if-unsent: true
+    log-codes-without-key: true

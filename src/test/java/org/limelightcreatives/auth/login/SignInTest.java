@@ -30,12 +30,12 @@ class SignInTest extends DatabaseTest {
     @Autowired
     MailProperties mail;
 
-    private static final LoginCodeMailer REFUSES = (email, code) -> {
+    private static final LoginCodeMailer REFUSES = (_, _) -> {
         throw new IllegalStateException("Resend refused the email (403 FORBIDDEN): testing addresses only");
     };
 
     private SignIn signIn(boolean logCodeIfUnsent) {
-        return new SignIn(this.users, this.codes, this.rateLimits, REFUSES, new MailProperties("", "from@example.com", logCodeIfUnsent));
+        return new SignIn(this.users, this.codes, this.rateLimits, REFUSES, new MailProperties("", "from@example.com", logCodeIfUnsent, true));
     }
 
     @Autowired
@@ -65,9 +65,9 @@ class SignInTest extends DatabaseTest {
     @Test
     void fifteenCodesAnHourPerIp() {
         for (int i = 0; i < 15; i++)
-            assertThat(signIn.sendCode("p" + i + "@example.com", "192.0.2.1")).isEqualTo(SignIn.SendResult.SENT);
-        assertThat(signIn.sendCode("another@example.com", "192.0.2.1")).isEqualTo(SignIn.SendResult.TOO_MANY_FOR_IP);
-        assertThat(signIn.sendCode("another@example.com", "192.0.2.2")).isEqualTo(SignIn.SendResult.SENT);
+            assertThat(this.signIn.sendCode("p" + i + "@example.com", "192.0.2.1")).isEqualTo(SignIn.SendResult.SENT);
+        assertThat(this.signIn.sendCode("another@example.com", "192.0.2.1")).isEqualTo(SignIn.SendResult.TOO_MANY_FOR_IP);
+        assertThat(this.signIn.sendCode("another@example.com", "192.0.2.2")).isEqualTo(SignIn.SendResult.SENT);
     }
 
     @Test
@@ -93,6 +93,6 @@ class SignInTest extends DatabaseTest {
 
     @Test
     void productionSettingsKeepItOff() {
-        assertThat(mail.logCodeIfUnsent()).isFalse();
+        assertThat(this.mail.logCodeIfUnsent()).isFalse();
     }
 }

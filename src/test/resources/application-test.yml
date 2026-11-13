@@ -12,6 +12,7 @@ auth:
         redirect-urls: https://spa.example/callback
   mail:
     resend-api-key: ""
+    log-codes-without-key: true
 logging:
   level:
     org.flywaydb: warn
