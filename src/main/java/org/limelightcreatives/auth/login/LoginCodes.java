@@ -49,25 +49,40 @@ public class LoginCodes {
         if (code == null || !code.matches("\\d{6}")) return false;
         LocalDateTime now = LocalDateTime.now(this.clock);
 
-        record Attempt(String id, String codeHash) {}
-        Optional<Attempt> attempt = this.db.sql("""
+        boolean mayTry = this.db.sql("""
                 UPDATE "verification_codes" SET "attempts" = "attempts" + 1
                 WHERE "id" = (
                     SELECT "id" FROM "verification_codes"
                     WHERE "userId" = ? AND "usedAt" IS NULL AND "expiresAt" > ?
                     ORDER BY "createdAt" DESC LIMIT 1
                 ) AND ATTEMPTS < ?
-                RETURNING "id", "codeHash"
+                RETURNING "id"
                 """)
                 .params(userId, now, MAX_ATTEMPTS)
-                .query((rs, row) -> new Attempt(rs.getString("id"), rs.getString("codeHash")))
-                .optional();
+                .query(String.class).optional().isPresent();
+        if (!mayTry) return false;
 
-        if (attempt.isEmpty() || !this.bcrypt.matches(code, attempt.get().codeHash())) return false;
+        record Candidate(String id, String codeHash) {}
+        Optional<Candidate> match = this.db.sql("""
+                SELECT "id", "codeHash" FROM "verification_codes"
+                WHERE "userId" = ? AND "usedAt" IS NULL AND "expiresAt" > ?
+                ORDER BY "createdAt" DESC
+                """)
+                .params(userId, now)
+                .query((rs, row) -> new Candidate(rs.getString("id"), rs.getString("codeHash")))
+                .list().stream()
+                .filter(candidate -> this.bcrypt.matches(code, candidate.codeHash()))
+                .findFirst();
+        if (match.isEmpty()) return false;
 
         int used = this.db.sql("UPDATE \"verification_codes\" SET \"usedAt\" = ? WHERE \"id\" = ? AND \"usedAt\" IS NULL")
-                .params(now, attempt.get().id())
+                .params(now, match.get().id())
                 .update();
-        return used == 1;
+        if (used != 1) return false;
+
+        this.db.sql("UPDATE \"verification_codes\" SET \"usedAt\" = ? WHERE \"userId\" = ? AND \"usedAt\" IS NULL")
+                .params(now, userId)
+                .update();
+        return true;
     }
 }

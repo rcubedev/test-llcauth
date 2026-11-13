@@ -75,10 +75,22 @@ class LoginCodesTest extends DatabaseTest {
     }
 
     @Test
-    void onlyTheLatestCodeWorks() {
+    void anEarlierCodeStillWorksAfterAnotherIsSent() {
         String user = newUser();
         String first = this.codes.issue(user);
         String second = this.codes.issue(user);
+
+        assertThat(this.codes.verify(user, first)).isTrue();
+        assertThat(this.codes.verify(user, second)).as("signing in uses up the rest").isFalse();
+    }
+
+    @Test
+    void anExpiredEarlierCodeDoesnt() {
+        String user = newUser();
+        String first = this.codes.issue(user);
+        this.db.sql("UPDATE \"verification_codes\" SET \"expiresAt\" = \"createdAt\" - interval '1 second'").update();
+        String second = this.codes.issue(user);
+
         if (!first.equals(second)) assertThat(this.codes.verify(user, first)).isFalse();
         assertThat(this.codes.verify(user, second)).isTrue();
     }
