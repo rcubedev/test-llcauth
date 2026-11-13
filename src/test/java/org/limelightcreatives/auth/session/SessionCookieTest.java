@@ -28,7 +28,7 @@ class SessionCookieTest extends DatabaseTest {
         assertThat(cookie.isHttpOnly()).isTrue();
         assertThat(cookie.getSecure()).isTrue();
         assertThat(cookie.getAttribute("SameSite")).isEqualTo("Lax");
-        assertThat(cookie.getMaxAge()).isEqualTo(30 * 24 * 60 * 60);
+        assertThat(cookie.getMaxAge()).as("outlives the session, which the database ends").isEqualTo(400 * 24 * 60 * 60);
     }
 
     @Test

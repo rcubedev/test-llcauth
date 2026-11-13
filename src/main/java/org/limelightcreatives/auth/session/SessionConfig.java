@@ -7,8 +7,12 @@ import org.springframework.session.jdbc.PostgreSqlJdbcIndexedSessionRepositoryCu
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
+import java.time.Duration;
+
 @Configuration
 class SessionConfig {
+
+    static final Duration COOKIE_AGE = Duration.ofDays(400);
 
     @Bean
     CookieSerializer cookieSerializer(AuthProperties properties) {
@@ -20,7 +24,7 @@ class SessionConfig {
         cookie.setUseHttpOnlyCookie(true);
         cookie.setUseSecureCookie(properties.secureCookies());
         cookie.setSameSite("Lax");
-        cookie.setCookieMaxAge((int) properties.sessionLifetime().toSeconds());
+        cookie.setCookieMaxAge((int) COOKIE_AGE.toSeconds());
         return cookie;
     }
 
