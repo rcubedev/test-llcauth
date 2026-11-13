@@ -12,6 +12,11 @@ auth:
   default-redirect: http://localhost:8080/account
   auth:
     generate-jwt-key: true
+    clients:
+      dashboard:
+        secret: ${AUTH_DASHBOARD_CLIENT_SECRET:dev-only-dashboard-secret-dev-only}
+        redirect-uris: http://localhost:3000/login/oauth2/code/limelight
+        post-logout-redirect-uris: http://localhost:3000
   mail:
     from: ${EMAIL_FROM:onboarding@resend.dev}
     log-code-if-unsent: true

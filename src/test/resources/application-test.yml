@@ -1,6 +1,15 @@
 auth:
   oauth:
     generate-jwt-key: true
+    clients:
+      test-app:
+        name: Test app
+        secret: test-app-secret-test-app-secret-123
+        redirect-urls: https://app.example/callback
+        post-logout-redirect-urls: https://app.example/
+      test-spa:
+        public-client: true
+        redirect-urls: https://spa.example/callback
   mail:
     resend-api-key: ""
 logging:

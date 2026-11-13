@@ -47,6 +47,14 @@ auth:
   oauth:
     jwt-key: ${AUTH_JWT_KEY:}
     generate-jwt-key: false
+    access-token-lifetime: 10m
+    refresh-token-lifetime: 30d
+    clients:
+      dashboard:
+        name: Limelight Creatives Dashboard
+        secret: ${AUTH_DASHBOARD_CLIENT_SECRET:}
+        redirect-uris: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/login/oauth2/code/limelight
+        post-logout-redirect-uris: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/
   mail:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}

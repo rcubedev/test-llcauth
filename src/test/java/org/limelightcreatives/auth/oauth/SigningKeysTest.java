@@ -26,8 +26,8 @@ class SigningKeysTest {
     @Test
     void theKeyAndItsIdAreTheSameEveryTime() throws Exception {
         String pem = pem(SigningKeys.generate());
-        ECKey first = SigningKeys.signingKey(new OAuthProperties(pem, false));
-        ECKey again = SigningKeys.signingKey(new OAuthProperties(pem, false));
+        ECKey first = SigningKeys.signingKey(new OAuthProperties(pem, false, null, null, null));
+        ECKey again = SigningKeys.signingKey(new OAuthProperties(pem, false, null, null, null));
         assertThat(again.getKeyID()).isEqualTo(first.getKeyID()).isNotBlank();
         assertThat(again.toPublicJWK()).isEqualTo(first.toPublicJWK());
         assertThat(first.isPrivate()).isTrue();
@@ -62,13 +62,13 @@ class SigningKeysTest {
 
     @Test
     void productionWontStartWithoutAKey() {
-        assertThatThrownBy(() -> SigningKeys.signingKey(new OAuthProperties("", false)))
+        assertThatThrownBy(() -> SigningKeys.signingKey(new OAuthProperties("", false, null, null, null)))
                 .hasMessageContaining("(AUTH_JWT_KEY) must be set");
     }
 
     @Test
     void developmentMakesOneUp() {
-        assertThat(SigningKeys.signingKey(new OAuthProperties(null, true)).isPrivate()).isTrue();
+        assertThat(SigningKeys.signingKey(new OAuthProperties(null, true, null, null, null)).isPrivate()).isTrue();
     }
 
     @Test
