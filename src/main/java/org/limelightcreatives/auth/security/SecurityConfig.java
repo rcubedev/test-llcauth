@@ -23,7 +23,7 @@ import org.springframework.security.web.savedrequest.RequestCache;
 public class SecurityConfig {
 
     static final String[] PUBLIC = {
-            "/", "/login", "/login/code", "/error", "/actuator/health",
+            "/", "/login", "/login/code", "/error", "/actuator/health", "/api/permission",
             "/css/**", "/js/**", "/fonts/**", "/favicon.ico"
     };
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
