@@ -32,7 +32,9 @@ public class AuthorizationServerConfig {
                                             TokenClaims claims, Users users, AuthorizationServerSettings settings) {
         http.oauth2AuthorizationServer(server -> {
             http.securityMatcher(server.getEndpointsMatcher());
-            server.oidc(oidc -> oidc.userInfoEndpoint(userInfo -> userInfo.userInfoMapper(claims.userInfo())));
+            server.oidc(oidc -> oidc
+                    .userInfoEndpoint(userInfo -> userInfo.userInfoMapper(claims.userInfo()))
+                    .logoutEndpoint(Customizer.withDefaults()));
         })
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .requestCache(cache -> cache.requestCache(requestCache))
