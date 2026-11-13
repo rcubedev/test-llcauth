@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.limelightcreatives.auth.DatabaseTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -88,10 +89,26 @@ class InvitesTest extends DatabaseTest {
     @Test
     void guessingCodesIsLimitedPerIp() {
         for (int i = 0; i < 20; i++)
-            assertThat(invites.redeem("a", "guess-" + i, IP)).isEqualTo(Invites.Result.INACTIVE);
+            assertThat(this.invites.redeem("a", "guess-" + i, IP)).isEqualTo(Invites.Result.INACTIVE);
         createInvite("real", "STAFF", null, "7 days");
-        assertThat(invites.redeem("a", "real", IP)).isEqualTo(Invites.Result.TOO_MANY_ATTEMPTS);
-        assertThat(invites.redeem("a", "real", "192.0.2.2")).isEqualTo(Invites.Result.REDEEMED);
+        assertThat(this.invites.redeem("a", "real", IP)).isEqualTo(Invites.Result.TOO_MANY_ATTEMPTS);
+        assertThat(this.invites.redeem("a", "real", "192.0.2.2")).isEqualTo(Invites.Result.REDEEMED);
+    }
+
+    @Test
+    void guessesSentAtOnceStillStopAtTwenty() throws Exception {
+        createInvite("real", "STAFF", null, "7 days");
+        List<Callable<Invites.Result>> guesses = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            String code = "guess-" + i;
+            guesses.add(() -> this.invites.redeem("a", code, IP));
+        }
+        try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
+            pool.invokeAll(guesses);
+        }
+        assertThat(this.db.sql("SELECT count(*) FROM \"rate_limit_events\" WHERE \"type\" = 'invite_fail'").query(Integer.class).single())
+                .isEqualTo(20);
+        assertThat(this.invites.redeem("a", "real", IP)).isEqualTo(Invites.Result.TOO_MANY_ATTEMPTS);
     }
 
     @Test

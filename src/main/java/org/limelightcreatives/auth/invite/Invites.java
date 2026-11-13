@@ -34,7 +34,8 @@ public class Invites {
     private enum Outcome {
         OK,
         UNKNOWN,
-        CLOSED
+        CLOSED,
+        LIMITED
     }
 
     private record Invite(String id, Role role) {}
@@ -57,16 +58,19 @@ public class Invites {
         String code = rawCode == null ? "" : rawCode.trim().toLowerCase(Locale.ROOT);
         if (code.isEmpty() || code.length() > 64) return Result.INACTIVE;
 
-        if (this.rateLimits.count(ip, RateLimits.INVITE_FAIL, FAIL_WINDOW) >= MAX_BAD_CODES_PER_IP)
-            return Result.TOO_MANY_ATTEMPTS;
-
         Outcome outcome = this.transaction.execute(status -> {
+            this.rateLimits.lock(ip, RateLimits.INVITE_FAIL);
+            if (this.rateLimits.count(ip, RateLimits.INVITE_FAIL, FAIL_WINDOW) >= MAX_BAD_CODES_PER_IP) return Outcome.LIMITED;
+
             Optional<Invite> invite = this.db.sql("SELECT \"id\", \"role\"::text AS \"role\" FROM \"invite_links\" WHERE \"code\" = ?")
                     .param(code)
-                    .query((rs, row) -> new Invite(rs.getString("id"), Role.valueOf(rs.getString("role"))))
+                    .query((rs, _) -> new Invite(rs.getString("id"), Role.valueOf(rs.getString("role"))))
                     .optional();
 
-            if (invite.isEmpty() || invite.get().role() == Role.ADMIN) return Outcome.UNKNOWN;
+            if (invite.isEmpty() || invite.get().role() == Role.ADMIN) {
+                this.rateLimits.record(ip, RateLimits.INVITE_FAIL);
+                return Outcome.UNKNOWN;
+            }
 
             boolean firstTime = this.db.sql("""
                     INSERT INTO "invite_redemptions" ("inviteId", "userId", "redeemedAt") VALUES (?, ?, ?)
@@ -95,10 +99,8 @@ public class Invites {
         return switch (outcome) {
             case OK -> Result.REDEEMED;
             case CLOSED -> Result.INACTIVE;
-            case UNKNOWN -> {
-                this.rateLimits.record(ip, RateLimits.INVITE_FAIL);
-                yield Result.INACTIVE;
-            }
+            case UNKNOWN -> Result.INACTIVE;
+            case LIMITED -> Result.TOO_MANY_ATTEMPTS;
         };
     }
 }

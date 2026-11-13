@@ -30,6 +30,12 @@ public class RateLimits {
                 .query(Integer.class).single();
     }
 
+    public void lock(String ip, String type) {
+        this.db.sql("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))").param(type + ":" + ip)
+                .query((_, _) -> 0)
+                .single();
+    }
+
     public void record(String ip, String type) {
         this.db.sql("INSERT INTO \"rate_limit_events\" (\"id\", \"ip\", \"type\", \"createdAt\") VALUES (?, ?, ?, ?)")
                 .params(UUID.randomUUID().toString(), ip, type, LocalDateTime.now(this.clock))
