@@ -6,7 +6,9 @@ import org.limelightcreatives.auth.user.User;
 import org.limelightcreatives.auth.user.Users;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -17,8 +19,6 @@ public class SignIn {
     private static final Logger log = LoggerFactory.getLogger(SignIn.class);
 
     static final Duration WINDOW = Duration.ofHours(1);
-    static final int MAX_CODES_PER_EMAIL = 5;
-    static final int MAX_CODES_PER_IP = 15;
 
     public enum SendResult {
         SENT("Code sent."),
@@ -40,29 +40,47 @@ public class SignIn {
     private final RateLimits rateLimits;
     private final LoginCodeMailer mailer;
     private final boolean logCodeIfUnsent;
+    private final SignInLimits limits;
+    private final TransactionTemplate transaction;
+    private final JdbcClient db;
 
-    public SignIn(Users users, LoginCodes codes, RateLimits rateLimits, LoginCodeMailer mailer, MailProperties mail) {
+    public SignIn(Users users, LoginCodes codes, RateLimits rateLimits, LoginCodeMailer mailer, MailProperties mail,
+                  SignInLimits limits, TransactionTemplate transaction, JdbcClient db) {
         this.users = users;
         this.codes = codes;
         this.rateLimits = rateLimits;
         this.mailer = mailer;
         this.logCodeIfUnsent = mail.logCodeIfUnsent();
+        this.limits = limits;
+        this.transaction = transaction;
+        this.db = db;
     }
+
+    private record Issued(SendResult refused, String code) {}
 
     public SendResult sendCode(String email, String ip) {
         String normalised = Users.normaliseEmail(email);
         if (normalised.length() > 254 || !normalised.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"))
             return SendResult.INVALID_EMAIL;
 
-        Optional<User> existing = this.users.findByEmail(normalised);
-        if (existing.isPresent() && this.codes.issuedSince(existing.get().id(), WINDOW) >= MAX_CODES_PER_EMAIL)
-            return SendResult.TOO_MANY_FOR_EMAIL;
-        if (this.rateLimits.count(ip, RateLimits.SEND_CODE, WINDOW) >= MAX_CODES_PER_IP)
-            return SendResult.TOO_MANY_FOR_IP;
+        Issued issued = this.transaction.execute(status -> {
+            lock("code-email:" + normalised);
+            lock("code-ip:" + ip);
 
-        User user = existing.orElseGet(() -> this.users.findOrCreate(normalised));
-        String code = this.codes.issue(user.id());
-        this.rateLimits.record(ip, RateLimits.SEND_CODE);
+            Optional<User> existing = this.users.findByEmail(normalised);
+            if (existing.isPresent() && this.codes.issuedSince(existing.get().id(), WINDOW) >= this.limits.codesPerEmail()) {
+                return new Issued(SendResult.TOO_MANY_FOR_EMAIL, null);
+            }
+            if (this.rateLimits.count(ip, RateLimits.SEND_CODE, WINDOW) >= this.limits.codesPerIp()) {
+                return new Issued(SendResult.TOO_MANY_FOR_IP, null);
+            }
+
+            User user = existing.orElseGet(() -> this.users.findOrCreate(normalised));
+            this.rateLimits.record(ip, RateLimits.SEND_CODE);
+            return new Issued(null, this.codes.issue(user.id()));
+        });
+        if (issued.refused() != null) return issued.refused();
+        String code = issued.code();
 
         try {
             this.mailer.send(normalised, code);
@@ -75,6 +93,10 @@ public class SignIn {
             }
             return SendResult.NOT_DELIVERED;
         }
+    }
+
+    private void lock(String key) {
+        db.sql("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))").param(key).query((_, _) -> 0).single();
     }
 
     public Optional<User> verify(String email, String code) {

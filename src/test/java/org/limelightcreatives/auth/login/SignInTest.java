@@ -9,7 +9,12 @@ import org.limelightcreatives.auth.user.Users;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,16 +35,23 @@ class SignInTest extends DatabaseTest {
     @Autowired
     MailProperties mail;
 
+    @Autowired
+    SignInLimits limits;
+
+    @Autowired
+    TransactionTemplate transaction;
+
+    @Autowired
+    SignIn signIn;
+
     private static final LoginCodeMailer REFUSES = (_, _) -> {
         throw new IllegalStateException("Resend refused the email (403 FORBIDDEN): testing addresses only");
     };
 
     private SignIn signIn(boolean logCodeIfUnsent) {
-        return new SignIn(this.users, this.codes, this.rateLimits, REFUSES, new MailProperties("", "from@example.com", logCodeIfUnsent, true));
+        return new SignIn(this.users, this.codes, this.rateLimits, REFUSES, new MailProperties("", "from@example.com", logCodeIfUnsent, true),
+                this.limits, this.transaction, this.db);
     }
-
-    @Autowired
-    SignIn signIn;
 
     @Test
     void theFirstCodeCreatesTheAccount() {
@@ -60,6 +72,17 @@ class SignInTest extends DatabaseTest {
         for (int i = 0; i < 5; i++)
             assertThat(this.signIn.sendCode("sam@example.com", "192.0.2." + i)).isEqualTo(SignIn.SendResult.SENT);
         assertThat(this.signIn.sendCode("sam@example.com", "192.0.2.99")).isEqualTo(SignIn.SendResult.TOO_MANY_FOR_EMAIL);
+    }
+
+    @Test
+    void codesAskedForAtOnceStillStopAtFive() throws Exception {
+        Callable<SignIn.SendResult> ask = () -> this.signIn.sendCode("sam@example.com", "192.0.2.1");
+        try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
+            long sent = 0;
+            for (var result : pool.invokeAll(List.of(ask, ask, ask, ask, ask, ask, ask, ask)))
+                if (result.get() == SignIn.SendResult.SENT) sent++;
+            assertThat(sent).isEqualTo(5);
+        }
     }
 
     @Test

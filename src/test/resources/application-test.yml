@@ -1,4 +1,6 @@
 auth:
+  limits:
+    codes-per-ip: 15
   oauth:
     generate-jwt-key: true
     clients:
