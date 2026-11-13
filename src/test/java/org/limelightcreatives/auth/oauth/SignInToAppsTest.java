@@ -127,6 +127,27 @@ class SignInToAppsTest extends DatabaseTest {
     }
 
     @Test
+    void deletedAccountsGetNoMoreTokens() throws Exception {
+        App app = App.confidential(this.mvc);
+        MvcResult tokens = app.token(signInThroughTheApp(new Visitor(this.mvc), app));
+        this.db.sql("DELETE FROM \"users\"").update();
+
+        assertThat(app.refresh(json(tokens, "$.refresh_token")).getResponse().getStatus()).isEqualTo(400);
+        assertThat(app.userInfo(json(tokens, "$.access_token")).getResponse().getStatus()).isEqualTo(401);
+    }
+
+    @Test
+    void aDeletedAccountStillSignedInHereHasToSignInAgain() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        signInThroughTheApp(visitor, App.confidential(this.mvc));
+        this.db.sql("DELETE FROM \"users\"").update();
+
+        App app = App.confidential(this.mvc);
+        assertThat(location(open(visitor, app.authorizeUrl()))).isEqualTo("/login");
+        assertThat(visitor.signedIn()).isFalse();
+    }
+
+    @Test
     void browserAppsSignInWithPkceAlone() throws Exception {
         App app = App.browser(this.mvc);
         MvcResult tokens = app.token(signInThroughTheApp(new Visitor(this.mvc), app));

@@ -34,8 +34,9 @@ public class TokenClaims implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
         context.getJwsHeader().algorithm(SignatureAlgorithm.ES256);
 
-        this.users.findById(context.getPrincipal().getName())
-                .ifPresent(user -> context.getClaims().claims(claims -> claims.putAll(UserClaims.of(user))));
+        User user = this.users.findById(context.getPrincipal().getName())
+                .orElseThrow(() -> new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_GRANT));
+        context.getClaims().claims(claims -> claims.putAll(UserClaims.of(user)));
     }
 
     public Function<OidcUserInfoAuthenticationContext, OidcUserInfo> userInfo() {
