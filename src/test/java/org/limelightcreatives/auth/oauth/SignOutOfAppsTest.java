@@ -53,6 +53,52 @@ class SignOutOfAppsTest extends DatabaseTest {
     }
 
     @Test
+    void signingOutHereStopsAppsRefreshing() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        App app = App.confidential(this.mvc);
+        visitor.signIn("sam@example.com", this.mailer);
+        visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee");
+        MvcResult tokens = app.token(app.code(open(visitor, app.authorizeUrl())));
+
+        visitor.post("/logout");
+
+        assertThat(app.refresh(json(tokens, "$.refresh_token")).getResponse().getStatus()).isEqualTo(400);
+        assertThat(app.userInfo(json(tokens, "$.access_token")).getResponse().getStatus()).isEqualTo(401);
+    }
+
+    @Test
+    void signingOutOfOneAppStopsTheOthersRefreshing() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        App app = App.confidential(this.mvc);
+        String idToken = signedInToTheApp(visitor, app);
+        App other = App.confidential(this.mvc);
+        MvcResult otherTokens = other.token(other.code(open(visitor, other.authorizeUrl())));
+
+        open(visitor, logoutUrl(idToken, "https://app.example/"));
+
+        assertThat(other.refresh(json(otherTokens, "$.refresh_token")).getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void someoneElsesSignInsAreLeftAlone() throws Exception {
+        Visitor sam = new Visitor(this.mvc);
+        App app = App.confidential(this.mvc);
+        MvcResult samsTokens = app.token(app.code(open(sam, firstSignIn(sam, "sam@example.com", app))));
+
+        Visitor alex = new Visitor(this.mvc);
+        alex.signIn("alex@example.com", this.mailer);
+        alex.post("/logout");
+
+        assertThat(app.refresh(json(samsTokens, "$.refresh_token")).getResponse().getStatus()).isEqualTo(200);
+    }
+
+    private String firstSignIn(Visitor visitor, String email, App app) throws Exception {
+        visitor.signIn(email, this.mailer);
+        visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee");
+        return app.authorizeUrl();
+    }
+
+    @Test
     void onlyToTheAppsOwnAddresses() throws Exception {
         Visitor visitor = new Visitor(this.mvc);
         String idToken = signedInToTheApp(visitor, App.confidential(this.mvc));

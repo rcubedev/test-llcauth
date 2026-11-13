@@ -2,6 +2,7 @@ package org.limelightcreatives.auth.security;
 
 import org.limelightcreatives.auth.AuthProperties;
 import org.limelightcreatives.auth.login.LoginCodes;
+import org.limelightcreatives.auth.oauth.SignOutOfApps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -62,7 +63,7 @@ public class SecurityConfig {
     @Bean
     @Order(2)
     SecurityFilterChain app(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache,
-                            CsrfTokenRepository csrfTokens) {
+                            CsrfTokenRepository csrfTokens, SignOutOfApps signOutOfApps) {
         http.securityContext(context -> context.securityContextRepository(contexts))
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
                 .requestCache(cache -> cache.requestCache(requestCache))
@@ -74,7 +75,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exceptions ->
                         exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
-                .logout(logout -> logout.logoutSuccessUrl("/login"));
+                .logout(logout -> logout.addLogoutHandler(signOutOfApps).logoutSuccessUrl("/login"));
         return http.build();
     }
 }
