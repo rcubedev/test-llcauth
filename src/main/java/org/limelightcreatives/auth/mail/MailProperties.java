@@ -1,5 +1,7 @@
 package org.limelightcreatives.auth.mail;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 /**
  * How login codes are emailed under {@code auth.mail:}.
  *
@@ -10,5 +12,6 @@ package org.limelightcreatives.auth.mail;
  * @param logCodesWithoutKey without an API key write every code to the log instead of refusing to start.
  *                           Used in local development and tests only.
  */
+@ConfigurationProperties("auth.mail")
 public record MailProperties(String resendApiKey, String from, boolean logCodeIfUnsent, boolean logCodesWithoutKey) {
 }
