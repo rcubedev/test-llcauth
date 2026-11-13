@@ -164,7 +164,7 @@ public class LoginFlowTest extends DatabaseTest {
 
     @Test
     void tooManyCodesShowsWhyAndKeepsTheEmail() throws Exception {
-        for (int i = 0; i < 5; i++) new Visitor(this.mvc, "198.51.100." + i).post("/login", "email", EMAIL);
+        for (int i = 0; i < 10; i++) new Visitor(this.mvc, "198.51.100." + i).post("/login", "email", EMAIL);
 
         Visitor visitor = new Visitor(this.mvc, "198.51.100.99");
         MvcResult result = visitor.post("/login", "email", EMAIL);

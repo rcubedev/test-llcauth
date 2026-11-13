@@ -11,6 +11,7 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -68,8 +69,8 @@ class SignInTest extends DatabaseTest {
     }
 
     @Test
-    void fiveCodesInFifteenMinutesPerEmail() {
-        for (int i = 0; i < 5; i++)
+    void tenCodesInFifteenMinutesPerEmail() {
+        for (int i = 0; i < 10; i++)
             assertThat(this.signIn.sendCode("sam@example.com", "192.0.2." + i)).isEqualTo(SignIn.SendResult.SENT);
         assertThat(this.signIn.sendCode("sam@example.com", "192.0.2.99")).isEqualTo(SignIn.SendResult.TOO_MANY_FOR_EMAIL);
 
@@ -78,13 +79,13 @@ class SignInTest extends DatabaseTest {
     }
 
     @Test
-    void codesAskedForAtOnceStillStopAtFive() throws Exception {
+    void codesAskedForAtOnceStillStopAtTen() throws Exception {
         Callable<SignIn.SendResult> ask = () -> this.signIn.sendCode("sam@example.com", "192.0.2.1");
         try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
             long sent = 0;
-            for (var result : pool.invokeAll(List.of(ask, ask, ask, ask, ask, ask, ask, ask)))
+            for (var result : pool.invokeAll(Collections.nCopies(16, ask)))
                 if (result.get() == SignIn.SendResult.SENT) sent++;
-            assertThat(sent).isEqualTo(5);
+            assertThat(sent).isEqualTo(10);
         }
     }
 

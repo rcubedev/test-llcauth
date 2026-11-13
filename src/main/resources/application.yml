@@ -45,7 +45,7 @@ auth:
   default-redirect: ${AUTH_DEFAULT_REDIRECT:https://auth.limelightcreatives.org/account}
   session-lifetime: 30d
   limits:
-    codes-per-email: 5
+    codes-per-email: 10
     codes-per-ip: ${AUTH_CODES_PER_IP:200}
   oauth:
     jwt-key: ${AUTH_JWT_KEY:}

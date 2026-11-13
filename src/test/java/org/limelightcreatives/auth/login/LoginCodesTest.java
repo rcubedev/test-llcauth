@@ -56,6 +56,31 @@ class LoginCodesTest extends DatabaseTest {
     }
 
     @Test
+    void sendingMoreCodesDoesntBuyMoreGuesses() {
+        String user = newUser();
+        for (int i = 0; i < 5; i++) {
+            String code = this.codes.issue(user);
+            assertThat(this.codes.verify(user, code.equals("000000") ? "111111" : "000000")).isFalse();
+        }
+        assertThat(this.codes.verify(user, this.codes.issue(user))).as("five wrong guesses used, whatever was sent since").isFalse();
+
+        this.db.sql("UPDATE \"verification_codes\" SET \"createdAt\" = \"createdAt\" - interval '16 minutes'").update();
+        assertThat(this.codes.verify(user, this.codes.issue(user))).isTrue();
+    }
+
+    @Test
+    void onlyTheNewestThreeCodesWork() {
+        String user = newUser();
+        String oldest = this.codes.issue(user);
+        String second = this.codes.issue(user);
+        String third = this.codes.issue(user);
+        String newest = this.codes.issue(user);
+
+        if (!List.of(second, third, newest).contains(oldest)) assertThat(this.codes.verify(user, oldest)).isFalse();
+        assertThat(this.codes.verify(user, second)).isTrue();
+    }
+
+    @Test
     void theRightCodeSentTwiceAtOnceSignsInOnce() throws Exception {
         String user = newUser();
         String code = this.codes.issue(user);
