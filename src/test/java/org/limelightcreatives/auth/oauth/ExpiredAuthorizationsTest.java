@@ -21,16 +21,18 @@ class ExpiredAuthorizationsTest extends DatabaseTest {
     }
 
     @Test
-    void onlySignInsWithNothingLeftAreDeleted() {
-        authorization("all-expired", "-31 days", "-31 days", "-1 day");
-        authorization("refreshable", "-2 days", "-2 days", "28 days");
-        authorization("abandoned-code", "-1 hour", null, null);
-        authorization("fresh-code", "5 minutes", null, null);
+    void onlySignInsThatExpiredOverThirtyDaysAgoAreDeleted() {
+        authorization("long-expired", "-90 days", "-90 days", "-31 days");
+        authorization("abandoned-code", "-31 days", null, null);
+        authorization("public-app-long-expired", "-40 days", "-40 days", null);
+        authorization("just-expired", "-31 days", "-31 days", "-1 day");
         authorization("public-app-expired", "-1 day", "-1 day", null);
+        authorization("refreshable", "-2 days", "-2 days", "28 days");
+        authorization("fresh-code", "5 minutes", null, null);
         authorization("in-progress", null, null, null);
 
-        assertThat(expired.delete()).isEqualTo(3);
-        assertThat(db.sql("SELECT id FROM oauth2_authorization ORDER BY id").query(String.class).list())
-                .containsExactly("fresh-code", "in-progress", "refreshable");
+        assertThat(this.expired.delete()).isEqualTo(3);
+        assertThat(this.db.sql("SELECT id FROM oauth2_authorization ORDER BY id").query(String.class).list())
+                .containsExactly("fresh-code", "in-progress", "just-expired", "public-app-expired", "refreshable");
     }
 }
