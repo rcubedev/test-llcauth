@@ -1,6 +1,7 @@
 package org.limelightcreatives.auth.oauth;
 
 import org.limelightcreatives.auth.AuthProperties;
+import org.limelightcreatives.auth.user.Users;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -17,6 +18,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -27,7 +29,7 @@ public class AuthorizationServerConfig {
     @Bean
     @Order(1)
     SecurityFilterChain authorizationServer(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache,
-                                            TokenClaims claims) {
+                                            TokenClaims claims, Users users, AuthorizationServerSettings settings) {
         http.oauth2AuthorizationServer(server -> {
             http.securityMatcher(server.getEndpointsMatcher());
             server.oidc(oidc -> oidc.userInfoEndpoint(userInfo -> userInfo.userInfoMapper(claims.userInfo())));
@@ -35,6 +37,8 @@ public class AuthorizationServerConfig {
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .requestCache(cache -> cache.requestCache(requestCache))
                 .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+                .addFilterBefore(new NameBeforeApps(users, requestCache, settings.getAuthorizationEndpoint()),
+                        AbstractPreAuthenticatedProcessingFilter.class)
                 .exceptionHandling(exceptions -> exceptions.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"), new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));

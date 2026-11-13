@@ -116,6 +116,17 @@ class SignInToAppsTest extends DatabaseTest {
     }
 
     @Test
+    void someoneSignedInWithoutANameIsAskedForItFirst() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+
+        App app = App.confidential(this.mvc);
+        assertThat(location(open(visitor, app.authorizeUrl()))).isEqualTo("/login/name");
+        MvcResult back = visitor.follow(visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee"));
+        assertThat(app.code(open(visitor, location(back)))).isNotBlank();
+    }
+
+    @Test
     void browserAppsSignInWithPkceAlone() throws Exception {
         App app = App.browser(this.mvc);
         MvcResult tokens = app.token(signInThroughTheApp(new Visitor(this.mvc), app));
