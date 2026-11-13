@@ -8,6 +8,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.net.URI;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
@@ -29,7 +31,7 @@ public class Visitor {
     }
 
     public MvcResult get(String url, String... params) throws Exception {
-        var request = MockMvcRequestBuilders.get(url);
+        var request = MockMvcRequestBuilders.get(URI.create(url));
         for (int i = 0; i < params.length; i += 2) request.param(params[i], params[i + 1]);
         return send(request);
     }

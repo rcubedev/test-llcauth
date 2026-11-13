@@ -26,10 +26,11 @@ public class AuthorizationServerConfig {
 
     @Bean
     @Order(1)
-    SecurityFilterChain authorizationServer(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache) throws Exception {
+    SecurityFilterChain authorizationServer(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache,
+                                            TokenClaims claims) {
         http.oauth2AuthorizationServer(server -> {
             http.securityMatcher(server.getEndpointsMatcher());
-            server.oidc(Customizer.withDefaults());
+            server.oidc(oidc -> oidc.userInfoEndpoint(userInfo -> userInfo.userInfoMapper(claims.userInfo())));
         })
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .requestCache(cache -> cache.requestCache(requestCache))

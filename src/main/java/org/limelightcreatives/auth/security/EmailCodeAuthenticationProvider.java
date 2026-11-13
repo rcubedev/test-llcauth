@@ -8,9 +8,13 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,9 +22,11 @@ import java.util.List;
 public class EmailCodeAuthenticationProvider implements AuthenticationProvider {
 
     private final SignIn signIn;
+    private final Clock clock;
 
-    public EmailCodeAuthenticationProvider(SignIn signIn) {
+    public EmailCodeAuthenticationProvider(SignIn signIn, Clock clock) {
         this.signIn = signIn;
+        this.clock = clock;
     }
 
     @Override
@@ -29,12 +35,22 @@ public class EmailCodeAuthenticationProvider implements AuthenticationProvider {
         String code = attempt.getCredentials() == null ? "" : attempt.getCredentials().strip();
         User user = this.signIn.verify(attempt.getPrincipal(), code)
                 .orElseThrow(() -> new BadCredentialsException("That code didn't work. Check it and try again."));
-        return signedIn(user);
+        FactorGrantedAuthority factor = FactorGrantedAuthority.withAuthority(FactorGrantedAuthority.OTT_AUTHORITY)
+                .issuedAt(Instant.now(this.clock))
+                .build();
+        return signedIn(user, factor);
     }
 
-    public static Authentication signedIn(User user) {
-        SimpleGrantedAuthority role = new SimpleGrantedAuthority("ROLE_" + user.role().name());
-        return UsernamePasswordAuthenticationToken.authenticated(user.id(), null, List.of(role));
+    public static Authentication signedIn(User user, FactorGrantedAuthority factor) {
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.role().name()), factor);
+        return UsernamePasswordAuthenticationToken.authenticated(user.id(), null, authorities);
+    }
+
+    public static Authentication refreshed(Authentication current, User user) {
+        FactorGrantedAuthority factor = current.getAuthorities().stream()
+                .filter(FactorGrantedAuthority.class::isInstance).map(FactorGrantedAuthority.class::cast)
+                .findFirst().orElseThrow();
+        return signedIn(user, factor);
     }
 
     @Override

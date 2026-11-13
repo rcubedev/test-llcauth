@@ -146,7 +146,8 @@ public class LoginController {
                 return "login/notice";
             }
             user = this.users.findById(user.get().id());
-            saveSignIn(EmailCodeAuthenticationProvider.signedIn(user.orElseThrow()), request, response);
+            Authentication current = this.holder.getContext().getAuthentication();
+            saveSignIn(EmailCodeAuthenticationProvider.refreshed(current, user.orElseThrow()), request, response);
         }
         if (user.orElseThrow().needsProfile()) return "redirect:/login/name";
         return "redirect:" + destination(request, response);

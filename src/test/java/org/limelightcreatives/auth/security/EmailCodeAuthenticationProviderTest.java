@@ -31,7 +31,8 @@ class EmailCodeAuthenticationProviderTest extends DatabaseTest {
 
         assertThat(result.isAuthenticated()).isTrue();
         assertThat(result.getName()).isEqualTo(id);
-        assertThat(result.getAuthorities()).extracting(GrantedAuthority::getAuthority).containsExactly("ROLE_STAFF");
+        assertThat(result.getAuthorities()).extracting(GrantedAuthority::getAuthority)
+                .containsExactly("ROLE_STAFF", "FACTOR_OTT");
         assertThat(result.getCredentials()).isNull();
     }
 
