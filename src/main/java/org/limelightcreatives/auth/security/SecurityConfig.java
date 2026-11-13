@@ -1,5 +1,6 @@
 package org.limelightcreatives.auth.security;
 
+import org.limelightcreatives.auth.AuthProperties;
 import org.limelightcreatives.auth.login.LoginCodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,8 @@ import org.springframework.security.web.context.DelegatingSecurityContextReposit
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 
@@ -48,9 +51,20 @@ public class SecurityConfig {
     }
 
     @Bean
+    CsrfTokenRepository csrfTokenRepository(AuthProperties properties) {
+        CookieCsrfTokenRepository tokens = new CookieCsrfTokenRepository();
+        tokens.setCookieName(properties.secureCookies() ? "__Host-csrf" : "csrf");
+        tokens.setCookiePath("/");
+        tokens.setCookieCustomizer(cookie -> cookie.secure(properties.secureCookies()).sameSite("Lax"));
+        return tokens;
+    }
+
+    @Bean
     @Order(2)
-    SecurityFilterChain app(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache, LoginCodes loginCodes) {
+    SecurityFilterChain app(HttpSecurity http, SecurityContextRepository contexts, RequestCache requestCache,
+                            CsrfTokenRepository csrfTokens) {
         http.securityContext(context -> context.securityContextRepository(contexts))
+                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
                 .requestCache(cache -> cache.requestCache(requestCache))
                 .authorizeHttpRequests(requests ->
                         requests.requestMatchers(PUBLIC)

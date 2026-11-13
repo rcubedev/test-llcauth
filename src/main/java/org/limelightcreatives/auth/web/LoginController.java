@@ -70,16 +70,15 @@ public class LoginController {
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String next, @RequestParam(required = false) String invite,
                         Principal principal, HttpServletRequest request, HttpServletResponse response, Model model) {
-        HttpSession session = request.getSession();
         if (next != null) {
-            session.setAttribute(NEXT, next);
+            request.getSession().setAttribute(NEXT, next);
             this.requestCache.removeRequest(request, response);
         }
-        if (invite != null && !invite.isBlank()) session.setAttribute(INVITE, invite.strip());
+        if (invite != null && !invite.isBlank()) request.getSession().setAttribute(INVITE, invite.strip());
 
         if (principal != null) return "redirect:/login/continue";
 
-        model.addAttribute("invite", session.getAttribute(INVITE) != null);
+        model.addAttribute("invite", attribute(request, INVITE).isPresent());
         return "login/email";
     }
 

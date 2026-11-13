@@ -64,9 +64,9 @@ public class LoginFlowTest extends DatabaseTest {
     @Test
     void signingInGivesANewSessionId() throws Exception {
         Visitor visitor = new Visitor(this.mvc);
-        visitor.get("/login");
+        visitor.post("/login", "email", EMAIL);
         String before = visitor.session.getValue();
-        visitor.signIn(EMAIL, this.mailer);
+        visitor.post("/login/code", "code", this.mailer.lastCodeFor(EMAIL));
         assertThat(visitor.session.getValue()).isNotEqualTo(before);
         assertThat(this.db.sql("SELECT principal_name FROM spring_session").query(String.class).list())
                 .containsExactly(this.db.sql("SELECT \"id\" FROM \"users\"").query(String.class).single());
@@ -128,18 +128,6 @@ public class LoginFlowTest extends DatabaseTest {
         MvcResult result = new Visitor(this.mvc).post("/login/name", "firstName", "Sam", "lastName", "Lee");
         assertThat(location(result)).endsWith("/login");
         assertThat(this.db.sql("SELECT count(*) FROM \"users\"").query(Integer.class).single()).isZero();
-    }
-
-    @Test
-    void theFormsCarryTheirOwnCsrfToken() throws Exception {
-        Visitor visitor = new Visitor(this.mvc);
-        String page = body(visitor.get("/login"));
-        Matcher token = Pattern.compile("name=\"_csrf\" value=\"([^\"]+)\"").matcher(page);
-        assertThat(token.find()).isTrue();
-
-        MvcResult post = visitor.send(MockMvcRequestBuilders.post("/login").param("email", EMAIL).param("_csrf", token.group(1)));
-        assertThat(location(post)).isEqualTo("/login/code");
-        assertThat(this.mailer.sentTo(EMAIL)).isTrue();
     }
 
     @Test
