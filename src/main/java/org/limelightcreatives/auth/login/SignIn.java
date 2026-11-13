@@ -19,6 +19,7 @@ public class SignIn {
     private static final Logger log = LoggerFactory.getLogger(SignIn.class);
 
     static final Duration WINDOW = Duration.ofHours(1);
+    static final Duration EMAIL_WINDOW = Duration.ofMinutes(15);
 
     public enum SendResult {
         SENT("Code sent."),
@@ -68,7 +69,7 @@ public class SignIn {
             lock("code-ip:" + ip);
 
             Optional<User> existing = this.users.findByEmail(normalised);
-            if (existing.isPresent() && this.codes.issuedSince(existing.get().id(), WINDOW) >= this.limits.codesPerEmail()) {
+            if (existing.isPresent() && this.codes.issuedSince(existing.get().id(), EMAIL_WINDOW) >= this.limits.codesPerEmail()) {
                 return new Issued(SendResult.TOO_MANY_FOR_EMAIL, null);
             }
             if (this.rateLimits.count(ip, RateLimits.SEND_CODE, WINDOW) >= this.limits.codesPerIp()) {

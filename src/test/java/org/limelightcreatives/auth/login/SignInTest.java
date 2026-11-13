@@ -68,10 +68,13 @@ class SignInTest extends DatabaseTest {
     }
 
     @Test
-    void fiveCodesAnHourPerEmail() {
+    void fiveCodesInFifteenMinutesPerEmail() {
         for (int i = 0; i < 5; i++)
             assertThat(this.signIn.sendCode("sam@example.com", "192.0.2." + i)).isEqualTo(SignIn.SendResult.SENT);
         assertThat(this.signIn.sendCode("sam@example.com", "192.0.2.99")).isEqualTo(SignIn.SendResult.TOO_MANY_FOR_EMAIL);
+
+        this.db.sql("UPDATE \"verification_codes\" SET \"createdAt\" = \"createdAt\" - interval '16 minutes'").update();
+        assertThat(this.signIn.sendCode("sam@example.com", "192.0.2.99")).isEqualTo(SignIn.SendResult.SENT);
     }
 
     @Test
