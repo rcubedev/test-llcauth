@@ -3,6 +3,9 @@ package org.limelightcreatives.auth;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.limelightcreatives.auth.login.SignIn;
+import org.limelightcreatives.auth.user.Role;
+import org.limelightcreatives.auth.user.User;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -39,7 +42,7 @@ class ExistingDatabaseTest {
 
         String base = TestPostgres.jdbcUrl();
         String url = base + (base.contains("?") ? "&" : "?") + "currentSchema=" + SCHEMA;
-        this.app = new SpringApplicationBuilder(AuthApp.class)
+        app = new SpringApplicationBuilder(AuthApp.class, RecordingMailer.Config.class)
                 .web(WebApplicationType.NONE)
                 .profiles("test")
                 .run("--server.port=0", "--spring.datasource.url=" + url, "--spring.flyway.schemas=" + SCHEMA);
@@ -47,7 +50,7 @@ class ExistingDatabaseTest {
 
     @AfterAll
     static void stop() {
-        if (this.app != null) this.app.close();
+        if (app != null) app.close();
     }
 
     @Test
@@ -65,8 +68,29 @@ class ExistingDatabaseTest {
         assertThat(role).isEqualTo("STAFF");
     }
 
+    @Test
+    void existingPeopleSignInAsThemselves() {
+        SignIn signIn = app.getBean(SignIn.class);
+        assertThat(signIn.sendCode("Ontik@Example.com", "192.0.2.1")).isEqualTo(SignIn.SendResult.SENT);
+
+        String code = app.getBean(RecordingMailer.class).lastCodeFor("ontik@example.com");
+        User user = signIn.verify("ontik@example.com", code).orElseThrow();
+        assertThat(user.id()).isEqualTo("cm-existing-staff");
+        assertThat(user.role()).isEqualTo(Role.STAFF);
+        assertThat(user.name()).isEqualTo("Ontik Reza");
+    }
+
+    @Test
+    void theNewTablesAreAddedAlongside() {
+        List<String> tables = db().sql("""
+                SELECT table_name FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name
+                """).param(SCHEMA).query(String.class).list();
+        assertThat(tables).contains("spring_session", "spring_session_attributes", "oauth2_registered_client",
+                "oauth2_authorization", "oauth2_authorization_consent", "_prisma_migrations", "users");
+    }
+
     private static JdbcClient db() {
-        return this.app.getBean(JdbcClient.class);
+        return app.getBean(JdbcClient.class);
     }
 
     private static String resource(String name) throws IOException {
