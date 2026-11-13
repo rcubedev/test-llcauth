@@ -126,7 +126,7 @@ public class LoginFlowTest extends DatabaseTest {
     @Test
     void savingANameNeedsASignIn() throws Exception {
         MvcResult result = new Visitor(this.mvc).post("/login/name", "firstName", "Sam", "lastName", "Lee");
-        assertThat(location(result)).endsWith("/login");
+        assertThat(location(result)).endsWith("/login?resume");
         assertThat(this.db.sql("SELECT count(*) FROM \"users\"").query(Integer.class).single()).isZero();
     }
 

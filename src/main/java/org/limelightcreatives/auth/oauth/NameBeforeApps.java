@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.limelightcreatives.auth.user.User;
 import org.limelightcreatives.auth.user.Users;
+import org.limelightcreatives.auth.web.LoginController;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -51,7 +52,7 @@ class NameBeforeApps extends OncePerRequestFilter {
             if (session != null) session.invalidate();
             if (saved != null) request.getSession().setAttribute(SAVED_REQUEST, saved);
             SecurityContextHolder.getContextHolderStrategy().clearContext();
-            response.sendRedirect(request.getContextPath() + "/login");
+            response.sendRedirect(request.getContextPath() + LoginController.RESUME);
         } else if (user.get().needsProfile()) {
             this.requestCache.saveRequest(request, response);
             response.sendRedirect(request.getContextPath() + "/login/name");

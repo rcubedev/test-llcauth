@@ -18,7 +18,7 @@ class SecurityConfigTest extends DatabaseTest {
     void privatePagesSendYouToSignIn() throws Exception {
         var response = this.mvc.perform(get("/account")).andReturn().getResponse();
         assertThat(response.getStatus()).isEqualTo(302);
-        assertThat(response.getRedirectedUrl()).endsWith("/login");
+        assertThat(response.getRedirectedUrl()).endsWith("/login?resume");
     }
 
     @Test

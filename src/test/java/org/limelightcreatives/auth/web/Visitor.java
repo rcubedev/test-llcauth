@@ -71,7 +71,7 @@ public class Visitor {
 
     public boolean signedIn() throws Exception {
         String location = get("/login/continue").getResponse().getRedirectedUrl();
-        return location == null || !location.endsWith("/login");
+        return location == null || !(location.endsWith("/login") || location.endsWith("/login?resume"));
     }
 
     public static String body(MvcResult result) throws Exception {

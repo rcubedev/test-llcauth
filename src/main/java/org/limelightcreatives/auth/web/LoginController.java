@@ -32,6 +32,8 @@ import java.util.Optional;
 @Controller
 public class LoginController {
 
+    public static final String RESUME = "/login?resume";
+
     static final String NEXT = "login.next";
     static final String INVITE = "login.invite";
     static final String EMAIL = "login.email";
@@ -70,10 +72,9 @@ public class LoginController {
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String next, @RequestParam(required = false) String invite,
                         Principal principal, HttpServletRequest request, HttpServletResponse response, Model model) {
-        if (next != null) {
-            request.getSession().setAttribute(NEXT, next);
-            this.requestCache.removeRequest(request, response);
-        }
+        boolean resuming = request.getParameterMap().containsKey("resume") || model.containsAttribute("error");
+        if (next != null || !resuming) this.requestCache.removeRequest(request, response);
+        if (next != null) request.getSession().setAttribute(NEXT, next);
         if (invite != null && !invite.isBlank()) request.getSession().setAttribute(INVITE, invite.strip());
 
         if (principal != null) return "redirect:/login/continue";

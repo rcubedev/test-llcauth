@@ -38,8 +38,8 @@ class SignInToAppsTest extends DatabaseTest {
 
     private String signInThroughTheApp(Visitor visitor, App app) throws Exception {
         MvcResult toLogin = open(visitor, app.authorizeUrl());
-        assertThat(location(toLogin)).endsWith("/login");
-        assertThat(body(visitor.get("/login"))).contains("Sign in");
+        assertThat(location(toLogin)).endsWith("/login?resume");
+        assertThat(body(visitor.follow(toLogin))).contains("Sign in");
 
         MvcResult toName = visitor.follow(visitor.signIn(EMAIL, this.mailer));
         assertThat(location(toName)).isEqualTo("/login/name");
@@ -143,8 +143,32 @@ class SignInToAppsTest extends DatabaseTest {
         this.db.sql("DELETE FROM \"users\"").update();
 
         App app = App.confidential(this.mvc);
-        assertThat(location(open(visitor, app.authorizeUrl()))).isEqualTo("/login");
+        assertThat(location(open(visitor, app.authorizeUrl()))).isEqualTo("/login?resume");
         assertThat(visitor.signedIn()).isFalse();
+    }
+
+    @Test
+    void anAppSignInThatWasGivenUpOnIsntPickedUpLater() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        open(visitor, App.confidential(this.mvc).authorizeUrl());
+
+        visitor.get("/login");
+        MvcResult continued = visitor.follow(visitor.signIn(EMAIL, this.mailer));
+        MvcResult after = visitor.follow(visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee"));
+        assertThat(continued.getResponse().getRedirectedUrl()).isEqualTo("/login/name");
+        assertThat(location(after)).isEqualTo("https://dashboard.limelightcreatives.org/");
+    }
+
+    @Test
+    void aMistypedEmailStillGoesBackToTheApp() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        App app = App.confidential(this.mvc);
+        visitor.follow(open(visitor, app.authorizeUrl()));
+        visitor.follow(visitor.post("/login", "email", "not-an-email"));
+
+        visitor.follow(visitor.signIn(EMAIL, this.mailer));
+        MvcResult back = visitor.follow(visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee"));
+        assertThat(app.code(open(visitor, location(back)))).isNotBlank();
     }
 
     @Test

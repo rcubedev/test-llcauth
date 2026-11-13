@@ -33,9 +33,10 @@ class AccountTest extends DatabaseTest {
     @Test
     void signingInFromAPrivatePageGoesBackToIt() throws Exception {
         Visitor visitor = new Visitor(this.mvc);
-        assertThat(location(visitor.get("/account"))).endsWith("/login");
+        MvcResult toLogin = visitor.get("/account");
+        assertThat(location(toLogin)).endsWith("/login?resume");
 
-        visitor.get("/login");
+        visitor.follow(toLogin);
         MvcResult continued = visitor.follow(visitor.signIn("sam@example.com", this.mailer));
         assertThat(location(continued)).isEqualTo("/login/name");
         MvcResult named = visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee");

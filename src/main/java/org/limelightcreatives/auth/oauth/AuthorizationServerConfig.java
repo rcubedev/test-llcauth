@@ -2,6 +2,7 @@ package org.limelightcreatives.auth.oauth;
 
 import org.limelightcreatives.auth.AuthProperties;
 import org.limelightcreatives.auth.user.Users;
+import org.limelightcreatives.auth.web.LoginController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -42,7 +43,7 @@ public class AuthorizationServerConfig {
                 .addFilterBefore(new NameBeforeApps(users, requestCache, settings.getAuthorizationEndpoint()),
                         AbstractPreAuthenticatedProcessingFilter.class)
                 .exceptionHandling(exceptions -> exceptions.defaultAuthenticationEntryPointFor(
-                        new LoginUrlAuthenticationEntryPoint("/login"), new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
+                        new LoginUrlAuthenticationEntryPoint(LoginController.RESUME), new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
         return http.build();
     }
