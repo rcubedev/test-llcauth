@@ -138,7 +138,7 @@ public class LoginFlowTest extends DatabaseTest {
 
         MvcResult result = visitor.post("/login/code", "code", wrong);
         assertThat(location(result)).isEqualTo("/login/code");
-        assertThat(body(visitor.follow(result))).contains("That code didn&#39;t work.", "<span>sam@example.com</span>");
+        assertThat(body(visitor.follow(result))).contains("That code didn't work.", "<span>sam@example.com</span>");
         assertThat(visitor.signedIn()).isFalse();
     }
 
@@ -171,6 +171,14 @@ public class LoginFlowTest extends DatabaseTest {
         assertThat(location(result)).isEqualTo("/login");
         assertThat(body(visitor.follow(result)))
                 .contains("Too many codes requested. Please try again later.", "value=\"sam@example.com\"");
+    }
+
+    @Test
+    void whatPeopleTypeIsEscaped() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+        String page = body(visitor.post("/login/name", "firstName", "<script>alert(1)</script>", "lastName", " "));
+        assertThat(page).contains("value=\"&lt;script>alert(1)&lt;/script>\"").doesNotContain("<script>alert(1)");
     }
 
     @Test
