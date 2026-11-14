@@ -43,7 +43,7 @@ class SignInPageTest extends DatabaseTest {
 
         Cookie cookie = page.getResponse().getCookie("__Host-csrf");
         assertThat(cookie).isNotNull();
-        assertThat(cookie.getDomain()).isNotNull();
+        assertThat(cookie.getDomain()).isNull();
         assertThat(cookie.getPath()).isEqualTo("/");
         assertThat(cookie.getSecure()).isTrue();
         assertThat(cookie.isHttpOnly()).isTrue();

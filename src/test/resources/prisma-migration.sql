@@ -16,7 +16,7 @@ CREATE TABLE "users" (
         "role" "Role" NOT NULL DEFAULT 'PARTICIPANT',
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "users_pkey" PRIMARY KEY ("id")
-)
+);
 
 CREATE TABLE "verification_codes" (
         "id" TEXT NOT NULL,

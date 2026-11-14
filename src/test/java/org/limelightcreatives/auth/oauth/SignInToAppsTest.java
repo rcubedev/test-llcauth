@@ -156,7 +156,7 @@ class SignInToAppsTest extends DatabaseTest {
         MvcResult continued = visitor.follow(visitor.signIn(EMAIL, this.mailer));
         MvcResult after = visitor.follow(visitor.post("/login/name", "firstName", "Sam", "lastName", "Lee"));
         assertThat(continued.getResponse().getRedirectedUrl()).isEqualTo("/login/name");
-        assertThat(location(after)).isEqualTo("https://dashboard.limelightcreatives.org/");
+        assertThat(location(after)).isEqualTo("https://auth.limelightcreatives.org/account");
     }
 
     @Test

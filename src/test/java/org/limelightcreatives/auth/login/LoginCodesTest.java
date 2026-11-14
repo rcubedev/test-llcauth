@@ -127,7 +127,7 @@ class LoginCodesTest extends DatabaseTest {
                 .replaceFirst("^\\$2a\\$", "\\$2b\\$");
         this.db.sql("""
                 INSERT INTO "verification_codes" ("id", "userId", "codeHash", "expiresAt")
-                VALUES ('c1', 'u1', ?, (now() at the timezone 'utc') + interval '10 minutes')
+                VALUES ('c1', 'u1', ?, (now() at time zone 'utc') + interval '10 minutes')
                 """).param(hash).update();
         assertThat(this.codes.verify(user, "123456")).isTrue();
     }

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.limelightcreatives.auth.login.SignIn;
 import org.limelightcreatives.auth.user.Role;
 import org.limelightcreatives.auth.user.User;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -43,7 +42,6 @@ class ExistingDatabaseTest {
         String base = TestPostgres.jdbcUrl();
         String url = base + (base.contains("?") ? "&" : "?") + "currentSchema=" + SCHEMA;
         app = new SpringApplicationBuilder(AuthApp.class, RecordingMailer.Config.class)
-                .web(WebApplicationType.NONE)
                 .profiles("test")
                 .run("--server.port=0", "--spring.datasource.url=" + url, "--spring.flyway.schemas=" + SCHEMA);
     }
