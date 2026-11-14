@@ -112,7 +112,7 @@ tasks.bootRun {
 graalvmNative {
     binaries.named("main") {
         imageName = "auth"
-        buildArgs.add("-Ob")
+        buildArgs.add(providers.gradleProperty("native.optimization").map { "-O$it" }.orElse("-Ob"))
     }
 }
 

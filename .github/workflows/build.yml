@@ -77,7 +77,9 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build native image
-        run: ./gradlew nativeCompile
+        env:
+          LEVEL: ${{ github.ref_name == github.event.repository.default_branch && '2' || 'b' }}
+        run: ./gradlew nativeCompile -Pnative.optimization=$LEVEL
 
       - name: Compress native image
         run: gzip -9 build/native/nativeCompile/auth
