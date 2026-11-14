@@ -115,3 +115,10 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy
+    if: github.event_name != 'pull_request'
+    needs: [build, native]
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

@@ -1,24 +1,14 @@
 name: Deploy
-run-name: Deploy '${{ github.event.workflow_run.display_title }}'
 
-on:
-  workflow_run:
-    workflows: ["Build"]
-    types: [completed]
+on: workflow_call
 
 jobs:
   deploy:
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
-    runs-on: ubuntu-latest
     name: Deploy to Vercel
+    runs-on: ubuntu-latest
     concurrency:
-      group: deploy-${{ github.event.workflow_run.head_branch }}
+      group: deploy-${{ github.ref_name }}
       cancel-in-progress: true
-    permissions:
-      actions: read
-      contents: read
     env:
       VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
@@ -26,27 +16,30 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Download native image
         uses: actions/download-artifact@v8
         with:
           name: auth-native
           path: build/native/nativeCompile/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine Aliases
         id: alias
         env:
-          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          BRANCH_NAME: ${{ github.ref_name }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          SHA: ${{ github.sha }}
           PREFIX: ${{ vars.VERCEL_HOST_PREFIX }}
           SUFFIX: ${{ vars.VERCEL_HOST_SUFFIX }}
         run: |
           echo "commit=${PREFIX}-${SHA:0:8}-${SUFFIX}" >> "$GITHUB_OUTPUT"
+
+          head=$(git ls-remote origin "refs/heads/$BRANCH_NAME" | cut -f1)
+          if [[ "$head" != "$SHA" ]]; then
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "latest=true" >> "$GITHUB_OUTPUT"
 
           if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
             echo "branch=" >> "$GITHUB_OUTPUT"
@@ -83,17 +76,15 @@ jobs:
 
       - name: Prepare Version Message
         id: message
-        env:
-          COMMIT_TITLE: ${{ github.event.workflow_run.display_title }}
         run: |
-          message=$(printf '%s' "$COMMIT_TITLE" | tr -d '"`$\\' | cut -c1-100)
+          message=$(git log -1 --format=%s | tr -d '"`$\\' | cut -c1-100)
           echo "message=${message}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to production
-        if: steps.alias.outputs.branch == ''
+        if: steps.alias.outputs.latest == 'true' && steps.alias.outputs.branch == ''
         env:
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref_name }}
           MESSAGE: ${{ steps.message.outputs.message }}
           COMMIT_ALIAS: ${{ steps.alias.outputs.commit }}
         run: |
@@ -112,10 +103,10 @@ jobs:
           printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Deploy branch preview
-        if: steps.alias.outputs.branch != ''
+        if: steps.alias.outputs.latest == 'false' || steps.alias.outputs.branch != ''
         env:
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref_name }}
           MESSAGE: ${{ steps.message.outputs.message }}
           COMMIT_ALIAS: ${{ steps.alias.outputs.commit }}
           BRANCH_ALIAS: ${{ steps.alias.outputs.branch }}
@@ -132,5 +123,8 @@ jobs:
           url=$(npx --yes vercel@latest deploy --token "$VERCEL_TOKEN" \
             --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
           alias_to "$COMMIT_ALIAS"
-          alias_to "$BRANCH_ALIAS"
-          printf 'Deployment: %s\nThis commit: https://%s\nBranch: https://%s\n' "$url" "$COMMIT_ALIAS" "$BRANCH_ALIAS" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -n "$BRANCH_ALIAS" ]]; then
+            alias_to "$BRANCH_ALIAS"
+            printf 'Branch: https://%s\n' "$BRANCH_ALIAS" >> "$GITHUB_STEP_SUMMARY"
+          fi
