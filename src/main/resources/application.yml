@@ -56,8 +56,8 @@ auth:
       dashboard:
         name: Limelight Creatives Dashboard
         secret: ${AUTH_DASHBOARD_CLIENT_SECRET:}
-        redirect-uris: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/login/oauth2/code/limelight
-        post-logout-redirect-uris: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/
+        redirect-urls: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/login/oauth2/code/limelight
+        post-logout-redirect-urls: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/
   mail:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:sign-in@auth.limelightcreatives.org}
