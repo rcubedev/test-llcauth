@@ -116,6 +116,10 @@ graalvmNative {
     }
 }
 
+tasks.nativeCompile {
+    outputs.cacheIf { true }
+}
+
 tasks.bootJar {
     archiveFileName = "auth.jar"
 }
