@@ -82,13 +82,14 @@ jobs:
         run: ./gradlew nativeCompile -Pnative.optimization=$LEVEL
 
       - name: Compress native image
-        run: gzip -9 build/native/nativeCompile/auth
+        run: pigz -9 build/native/nativeCompile/auth
 
       - name: Capture native image
         uses: actions/upload-artifact@v7
         with:
           name: auth-native
           path: build/native/nativeCompile/auth.gz
+          compression-level: 0
           if-no-files-found: 'error'
 
   docker:

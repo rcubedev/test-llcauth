@@ -23,6 +23,15 @@ jobs:
           name: auth-native
           path: build/native/nativeCompile/
 
+      - name: Cache npm
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-vercel-65.16.0
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@65.16.0
+
       - name: Determine Aliases
         id: alias
         env:
@@ -97,7 +106,7 @@ jobs:
               -d "{\"alias\":\"$1\"}" > /dev/null
           }
 
-          url=$(npx --yes vercel@latest deploy --prod --token "$VERCEL_TOKEN" \
+          url=$(vercel deploy --prod --token "$VERCEL_TOKEN" \
             --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
           alias_to "$COMMIT_ALIAS"
           printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
@@ -120,7 +129,7 @@ jobs:
               -d "{\"alias\":\"$1\"}" > /dev/null
           }
 
-          url=$(npx --yes vercel@latest deploy --token "$VERCEL_TOKEN" \
+          url=$(vercel deploy --token "$VERCEL_TOKEN" \
             --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
           alias_to "$COMMIT_ALIAS"
           printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
