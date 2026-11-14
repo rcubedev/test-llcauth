@@ -29,6 +29,6 @@ public record AuthProperties(
 ) {
 
     public String cookieName() {
-        return secureCookies ? "__Secure-authjs.session_token" : "authjs.session_token";
+        return secureCookies ? "__Secure-authjs.session-token" : "authjs.session-token";
     }
 }
