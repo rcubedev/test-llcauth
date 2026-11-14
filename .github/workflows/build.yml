@@ -77,14 +77,17 @@ jobs:
       - name: Build native image
         run: ./gradlew -Pagent test metadataCopy nativeCompile
 
-      - name: Report size
-        run: ls -lh build/native/nativeCompile/auth
+      - name: Compress native image
+        run: |
+          ls -lh build/native/nativeCompile/auth
+          gzip -9 build/native/nativeCompile/auth
+          ls -lh build/native/nativeCompile/auth.gz
 
       - name: Capture native image
         uses: actions/upload-artifact@v7
         with:
           name: auth-native
-          path: build/native/nativeCompile/auth
+          path: build/native/nativeCompile/auth.gz
           if-no-files-found: 'error'
 
   docker:

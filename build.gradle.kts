@@ -111,6 +111,7 @@ graalvmNative {
     }
     binaries.named("main") {
         imageName = "auth"
+        buildArgs.add("-Ob")
         classpath(layout.buildDirectory.dir("native/agent-metadata"))
     }
 }
