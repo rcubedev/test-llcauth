@@ -4,6 +4,7 @@ plugins {
     java
     idea
     id("org.springframework.boot") version "4.1.2" // todo(fut): version catalog
+    id("org.graalvm.buildtools.native") version "1.1.18"
     id("org.limelightcreatives.tailwind")
 }
 
@@ -99,8 +100,27 @@ tasks.bootRun {
     systemProperty("spring.profiles.active", "dev")
 }
 
-tasks.jar {
-    enabled = false
+graalvmNative {
+    // record what the tests reach by reflection (like template expressions) so the native image keeps it
+    agent {
+        metadataCopy {
+            inputTaskNames.add("test")
+            outputDirectories.add("build/native/agent-metadata/META-INF/native-image")
+            mergeWithExisting = false
+        }
+    }
+    binaries.named("main") {
+        imageName = "auth"
+        classpath(layout.buildDirectory.dir("native/agent-metadata"))
+    }
+}
+
+tasks.metadataCopy {
+    mustRunAfter(tasks.test)
+}
+
+tasks.nativeCompile {
+    mustRunAfter(tasks.metadataCopy)
 }
 
 tasks.bootJar {
