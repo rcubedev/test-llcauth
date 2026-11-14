@@ -155,7 +155,7 @@ public class LoginController {
 
     @GetMapping("/login/name")
     public String nameForm(Principal principal) {
-        boolean named = this.users.findById(principal.getName()).map(user -> !user.needsProfile()).orElse(false);
+        boolean named = this.users.findById(principal.getName()).map(user -> !user.needsProfile()).orElse(true);
         return named ? "redirect:/login/continue" : "login/name";
     }
 

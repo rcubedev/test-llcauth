@@ -1,10 +1,8 @@
 package org.limelightcreatives.auth.security;
 
 import org.limelightcreatives.auth.AuthProperties;
-import org.limelightcreatives.auth.login.LoginCodes;
 import org.limelightcreatives.auth.oauth.SignOutOfApps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.limelightcreatives.auth.web.LoginController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -30,7 +28,6 @@ public class SecurityConfig {
             "/", "/login", "/login/code", "/error", "/actuator/health", "/api/permission",
             "/css/**", "/js/**", "/fonts/**", "/favicon.ico"
     };
-    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
     AuthenticationManager authenticationManager(EmailCodeAuthenticationProvider emailCodes) {
@@ -74,7 +71,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
+                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint(LoginController.RESUME)))
                 .logout(logout -> logout.addLogoutHandler(signOutOfApps).logoutSuccessUrl("/login"));
         return http.build();
     }
