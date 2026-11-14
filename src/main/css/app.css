@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 
-@source("../resources/templates")
-@source("../resources/static/js")
+@source "../resources/templates";
+@source "../resources/static/js";
 
 /* fonts */
 @font-face {
@@ -70,7 +70,7 @@ body {
             transparent var(--d)
     );
 
-    background-size: 25px, 25px;
+    background-size: 25px 25px;
 }
 
 .field {

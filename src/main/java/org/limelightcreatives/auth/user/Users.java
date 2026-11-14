@@ -44,7 +44,7 @@ public class Users {
                 INSERT INTO "users" ("id", "email", "createdAt") VALUES (?, ?, ?)
                 ON CONFLICT ("email") DO NOTHING
                 """)
-                .param(UUID.randomUUID().toString(), normalised, LocalDateTime.now(clock))
+                .params(UUID.randomUUID().toString(), normalised, LocalDateTime.now(clock))
                 .update();
         return findByEmail(normalised).orElseThrow();
     }
