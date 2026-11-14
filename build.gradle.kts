@@ -4,6 +4,7 @@ plugins {
     java
     idea
     id("org.springframework.boot") version "4.1.2" // todo(fut): version catalog
+    id("org.graalvm.buildtools.native") version "1.1.18"
     id("org.limelightcreatives.tailwind")
     id("gg.jte.gradle") version "3.2.5"
 }
@@ -23,6 +24,7 @@ tailwind {
 
 jte {
     generate()
+    jteExtension("gg.jte.nativeimage.NativeResourcesExtension")
 }
 
 repositories {
@@ -51,6 +53,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-restclient")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
+
+    jteGenerate("gg.jte:jte-native-resources:3.2.5")
 
     runtimeOnly("org.postgresql:postgresql")
 
@@ -105,8 +109,11 @@ tasks.bootRun {
     systemProperty("spring.profiles.active", "dev")
 }
 
-tasks.jar {
-    enabled = false
+graalvmNative {
+    binaries.named("main") {
+        imageName = "auth"
+        buildArgs.add("-Ob")
+    }
 }
 
 tasks.bootJar {
