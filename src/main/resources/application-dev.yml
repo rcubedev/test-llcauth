@@ -10,13 +10,9 @@ auth:
   cookie-domain: ""
   secure-cookies: false
   default-redirect: http://localhost:8080/account
+  dev-staff-email: ${AUTH_DEV_STAFF_EMAIL:}
   oauth:
     generate-jwt-key: true
-    clients:
-      dashboard:
-        secret: ${AUTH_DASHBOARD_CLIENT_SECRET:dev-only-dashboard-secret-dev-only}
-        redirect-urls: http://localhost:3000/login/oauth2/code/limelight
-        post-logout-redirect-urls: http://localhost:3000/
   mail:
     from: ${EMAIL_FROM:onboarding@resend.dev}
     log-code-if-unsent: true

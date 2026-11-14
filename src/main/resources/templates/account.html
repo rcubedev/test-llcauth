@@ -10,6 +10,8 @@
     </p>
     <p class="mb-8 text-sm">Role: <strong th:text="${#strings.capitalize(#strings.toLowerCase(user.role().name()))}">Staff</strong></p>
 
+    <p th:if="${user.role().name() != 'PARTICIPANT'}" class="mb-8 text-sm"><a th:href="@{/apps}" class="underline">Manage apps</a></p>
+
     <form method="post" th:action="@{/logout}">
         <button th:replace="~{fragments/button :: submit('Sign out', 'Signing out…')}"></button>
     </form>

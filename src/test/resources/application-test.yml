@@ -3,16 +3,6 @@ auth:
     codes-per-ip: 15
   oauth:
     generate-jwt-key: true
-    clients:
-      test-app:
-        name: Test app
-        secret: test-app-secret-test-app-secret-123
-        redirect-urls: https://app.example/callback
-        post-logout-redirect-urls: https://app.example/
-      test-spa:
-        public-client: true
-        id-token-algorithm: ES256
-        redirect-urls: https://spa.example/callback
   mail:
     resend-api-key: ""
     log-codes-without-key: true

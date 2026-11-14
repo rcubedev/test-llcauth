@@ -31,8 +31,8 @@ class SigningKeysTest {
     @Test
     void theKeyAndItsIdAreTheSameEveryTime() throws Exception {
         String pem = pem(SigningKeys.generateEc());
-        ECKey first = SigningKeys.ecKey(new OAuthProperties(pem, null, false, null, null, null));
-        ECKey again = SigningKeys.ecKey(new OAuthProperties(pem, null, false, null, null, null));
+        ECKey first = SigningKeys.ecKey(new OAuthProperties(pem, null, false, null, null));
+        ECKey again = SigningKeys.ecKey(new OAuthProperties(pem, null, false, null, null));
         assertThat(again.getKeyID()).isEqualTo(first.getKeyID()).isNotBlank();
         assertThat(again.toPublicJWK()).isEqualTo(first.toPublicJWK());
         assertThat(first.isPrivate()).isTrue();
@@ -67,13 +67,13 @@ class SigningKeysTest {
 
     @Test
     void productionWontStartWithoutAKey() {
-        assertThatThrownBy(() -> SigningKeys.ecKey(new OAuthProperties("", null, false, null, null, null)))
+        assertThatThrownBy(() -> SigningKeys.ecKey(new OAuthProperties("", null, false, null, null)))
                 .hasMessageContaining("(AUTH_JWT_KEY) must be set");
     }
 
     @Test
     void developmentMakesOneUp() {
-        assertThat(SigningKeys.ecKey(new OAuthProperties(null, null, true, null, null, null)).isPrivate()).isTrue();
+        assertThat(SigningKeys.ecKey(new OAuthProperties(null, null, true, null, null)).isPrivate()).isTrue();
     }
 
     @Test
@@ -101,8 +101,8 @@ class SigningKeysTest {
     @Test
     void theRsaKeyAndItsIdAreTheSameEveryTime() throws Exception {
         String pem = pem(SigningKeys.generateRsa());
-        RSAKey first = SigningKeys.rsaKey(new OAuthProperties(null, pem, false, null, null, null));
-        RSAKey again = SigningKeys.rsaKey(new OAuthProperties(null, pem, false, null, null, null));
+        RSAKey first = SigningKeys.rsaKey(new OAuthProperties(null, pem, false, null, null));
+        RSAKey again = SigningKeys.rsaKey(new OAuthProperties(null, pem, false, null, null));
         assertThat(again.getKeyID()).isEqualTo(first.getKeyID()).isNotBlank();
         assertThat(again.toPublicJWK()).isEqualTo(first.toPublicJWK());
         assertThat(first.isPrivate()).isTrue();
@@ -121,13 +121,13 @@ class SigningKeysTest {
     @Test
     void productionWontStartWithoutAnRsaKey() throws Exception {
         String ec = pem(SigningKeys.generateEc());
-        assertThatThrownBy(() -> SigningKeys.rsaKey(new OAuthProperties(ec, "", false, null, null, null)))
+        assertThatThrownBy(() -> SigningKeys.rsaKey(new OAuthProperties(ec, "", false, null, null)))
                 .hasMessageContaining("(AUTH_JWT_RSA_KEY) must be set");
     }
 
     @Test
     void developmentMakesUpTwoDifferentKeys() {
-        OAuthProperties properties = new OAuthProperties(null, null, true, null, null, null);
+        OAuthProperties properties = new OAuthProperties(null, null, true, null, null);
         ECKey ec = SigningKeys.ecKey(properties);
         RSAKey rsa = SigningKeys.rsaKey(properties);
         assertThat(rsa.isPrivate()).isTrue();
