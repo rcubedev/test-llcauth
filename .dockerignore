@@ -1,5 +1,7 @@
 build/*
-!build/libs/
+!build/native/
+build/native/*
+!build/native/nativeCompile/
 .gradle/
 .kotlin/
 build-logic/build/

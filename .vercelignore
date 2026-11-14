@@ -3,4 +3,6 @@
 !/vercel.json
 !/build
 /build/*
-!/build/libs
+!/build/native
+/build/native/*
+!/build/native/nativeCompile

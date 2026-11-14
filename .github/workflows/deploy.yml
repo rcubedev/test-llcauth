@@ -29,11 +29,11 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Download Jar
+      - name: Download native image
         uses: actions/download-artifact@v8
         with:
-          name: auth-jar
-          path: build/libs/
+          name: auth-native
+          path: build/native/nativeCompile/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

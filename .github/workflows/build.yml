@@ -91,17 +91,17 @@ jobs:
 
   docker:
     name: Docker Image Build
-    needs: build
+    needs: native
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Download Jar
+      - name: Download native image
         uses: actions/download-artifact@v8
         with:
-          name: auth-jar
-          path: build/libs/
+          name: auth-native
+          path: build/native/nativeCompile/
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
