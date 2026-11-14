@@ -1,8 +1,0 @@
-/*
-!/Dockerfile
-!/vercel.json
-!/build
-/build/*
-!/build/native
-/build/native/*
-!/build/native/nativeCompile

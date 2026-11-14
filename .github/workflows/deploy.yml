@@ -1,6 +1,11 @@
 name: Deploy
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -17,11 +22,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Download native image
-        uses: actions/download-artifact@v8
-        with:
-          name: auth-native
-          path: build/native/nativeCompile/
+      - name: Prepare deployment
+        env:
+          IMAGE: ${{ inputs.image }}
+        run: |
+          mkdir -p .deploy
+          cp vercel.json .deploy/
+          printf 'FROM %s\n' "$IMAGE" > .deploy/Dockerfile
 
       - name: Cache npm
         uses: actions/cache@v6
@@ -106,7 +113,7 @@ jobs:
               -d "{\"alias\":\"$1\"}" > /dev/null
           }
 
-          url=$(vercel deploy --prod --token "$VERCEL_TOKEN" \
+          url=$(cd .deploy && vercel deploy --prod --token "$VERCEL_TOKEN" \
             --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
           alias_to "$COMMIT_ALIAS"
           printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
@@ -129,7 +136,7 @@ jobs:
               -d "{\"alias\":\"$1\"}" > /dev/null
           }
 
-          url=$(vercel deploy --token "$VERCEL_TOKEN" \
+          url=$(cd .deploy && vercel deploy --token "$VERCEL_TOKEN" \
             --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
           alias_to "$COMMIT_ALIAS"
           printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
