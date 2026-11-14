@@ -99,6 +99,14 @@ tasks.bootRun {
     systemProperty("spring.profiles.active", "dev")
 }
 
+tasks.jar {
+    enabled = false
+}
+
+tasks.bootJar {
+    archiveFileName = "auth.jar"
+}
+
 /**
  * Adds the given [jar] as a java agent using the `-javaagent:<jar>` JVM argument
  *
