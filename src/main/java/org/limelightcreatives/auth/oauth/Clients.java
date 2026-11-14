@@ -24,7 +24,7 @@ import java.util.Map;
 @Component
 public class Clients implements ApplicationRunner {
 
-    private static Logger log = LoggerFactory.getLogger(Clients.class);
+    private static final Logger log = LoggerFactory.getLogger(Clients.class);
     static final int MIN_SECRET_LENGTH = 32;
 
     private final RegisteredClientRepository repository;
