@@ -22,14 +22,4 @@ public class PageModel {
         if (csrf != null) csrf.getToken();
         return new Page(this.assets, csrf, principal != null);
     }
-
-    @ModelAttribute("assets")
-    public Assets assets() {
-        return this.assets;
-    }
-
-    @ModelAttribute("signedIn")
-    public boolean signedIn(Principal principal) {
-        return principal != null;
-    }
 }

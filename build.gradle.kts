@@ -45,7 +45,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-authorization-server")
     implementation("org.springframework.boot:spring-boot-starter-session-jdbc")
-    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("gg.jte:jte:3.2.5")
     implementation("gg.jte:jte-spring-boot-starter-4:3.2.5")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
@@ -91,7 +90,7 @@ configurations.testRuntimeOnly {
 
 sourceSets.main {
     tailwind {
-        content.from("src/main/jte", "src/main/resources/templates", "src/main/resources/static/js")
+        content.from("src/main/jte", "src/main/resources/static/js")
     }
 }
 
