@@ -5,6 +5,7 @@ plugins {
     idea
     id("org.springframework.boot") version "4.1.2" // todo(fut): version catalog
     id("org.limelightcreatives.tailwind")
+    id("gg.jte.gradle") version "3.2.5"
 }
 
 group = "org.limelightcreatives"
@@ -18,6 +19,10 @@ java {
 
 tailwind {
     version = providers.gradleProperty("tailwind.version")
+}
+
+jte {
+    generate()
 }
 
 repositories {
@@ -41,6 +46,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-authorization-server")
     implementation("org.springframework.boot:spring-boot-starter-session-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("gg.jte:jte:3.2.5")
+    implementation("gg.jte:jte-spring-boot-starter-4:3.2.5")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-restclient")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
@@ -84,7 +91,7 @@ configurations.testRuntimeOnly {
 
 sourceSets.main {
     tailwind {
-        content.from("src/main/resources/templates", "src/main/resources/static/js")
+        content.from("src/main/jte", "src/main/resources/templates", "src/main/resources/static/js")
     }
 }
 

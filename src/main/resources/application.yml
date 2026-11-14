@@ -27,6 +27,10 @@ spring:
     virtual:
       enabled: true
 
+gg:
+  jte:
+    use-precompiled-templates: true
+
 management:
   endpoints:
     web:

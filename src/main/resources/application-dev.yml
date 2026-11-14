@@ -4,6 +4,12 @@ spring:
     username: ${DATABASE_USER:auth}
     password: ${DATABASE_PASSWORD:auth}
 
+gg:
+  jte:
+    use-precompiled-templates: false
+    development-mode: true
+    class-directory: build/jte-classes
+
 auth:
   base-url: http://localhost:8080
   root-domain: localhost

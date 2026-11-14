@@ -1,0 +1,6 @@
+@param String classes
+
+<svg class="${classes}" viewBox="0 0 71 112" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M34.0842 5.00024C36.1659 32.3071 39.9734 45.0186 60.8435 53.8204C43.2615 68.9484 37.8959 81.9723 34.0842 111C31.2151 79.9997 26.929 66.1442 9.84351 53.8204C26.7067 45.9754 31.8813 35.3111 34.0842 6.0034"
+          stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+</svg>
