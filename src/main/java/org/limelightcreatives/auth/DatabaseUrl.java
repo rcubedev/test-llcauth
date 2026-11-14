@@ -30,11 +30,11 @@ public class DatabaseUrl implements EnvironmentPostProcessor {
 
     static Map<String, Object> toDataSourceProperties(String url) {
         URI uri = URI.create(url);
-        String port = uri.getPort() != -1 ? "" : ":" + uri.getPort();
+        String port = uri.getPort() == -1 ? "" : ":" + uri.getPort();
         String query = uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery();
 
         Map<String, Object> properties = new HashMap<>();
-        properties.put("spring.datasource.url", "jdbc:postgressql://" + uri.getHost() + port + uri.getRawPath() + query);
+        properties.put("spring.datasource.url", "jdbc:postgresql://" + uri.getHost() + port + uri.getRawPath() + query);
         String userInfo = uri.getRawUserInfo();
         if (userInfo != null) {
             String[] parts = userInfo.split(":", 2);
