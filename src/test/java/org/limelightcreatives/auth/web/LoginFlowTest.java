@@ -211,6 +211,30 @@ public class LoginFlowTest extends DatabaseTest {
                 .requestAttr("jakarta.servlet.error.status_code", 404)
                 .requestAttr("jakarta.servlet.error.request_uri", "/no-such-page"));
         assertThat(missing.getResponse().getStatus()).isEqualTo(404);
-        assertThat(body(missing)).contains("Page not found", "/css/app.css?v=");
+        assertThat(body(missing)).contains("Page not found", "/css/app.css?v=", "Back to sign in");
+    }
+
+    @Test
+    void errorPagesLeadSignedInPeopleToTheirAccount() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+        named(EMAIL);
+        MvcResult missing = visitor.send(MockMvcRequestBuilders.get("/error")
+                .accept("text/html")
+                .requestAttr("jakarta.servlet.error.status_code", 404)
+                .requestAttr("jakarta.servlet.error.request_uri", "/no-such-page"));
+        assertThat(body(missing)).contains("Page not found", "Back to your account").doesNotContain("Back to sign in");
+    }
+
+    @Test
+    void forbiddenPagesSayWhy() throws Exception {
+        Visitor visitor = new Visitor(this.mvc);
+        visitor.signIn(EMAIL, this.mailer);
+        named(EMAIL);
+        MvcResult denied = visitor.send(MockMvcRequestBuilders.get("/error")
+                .accept("text/html")
+                .requestAttr("jakarta.servlet.error.status_code", 403)
+                .requestAttr("jakarta.servlet.error.request_uri", "/apps"));
+        assertThat(body(denied)).contains("Not allowed", "Your account can’t use this page.");
     }
 }

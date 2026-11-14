@@ -1,14 +1,21 @@
 <!--/* @thymesVar id="status" type="java.lang.Integer" */-->
+<!--/* @thymesVar id="signedIn" type="java.lang.Boolean" */-->
 
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page('Something went wrong', ~{::content})}">
 <th:block th:fragment="content">
-    <h1 class="mb-2 font-display text-2xl font-bold" th:text="${status == 404} ? 'Page not found' : 'Something went wrong'">
+    <h1 class="mb-2 font-display text-2xl font-bold"
+        th:text="${status == 404} ? 'Page not found' : (${status == 403} ? 'Not allowed' : 'Something went wrong')">
         Something went wrong
     </h1>
     <p class="mb-8 text-sm opacity-65"
-       th:text="${status == 404} ? 'There’s nothing at this address.' : 'Please try again. If it keeps happening, reach out to us at inquiries@limelightcreatives.org.'">
+       th:text="${status == 404} ? 'There’s nothing at this address.' : (${status == 403} ? 'Your account can’t use this page.' : 'Please try again. If it keeps happening, reach out to us at inquiries@limelightcreatives.org.')">
         Please try again.
     </p>
-    <a th:replace="~{fragments/button :: link(@{/login}, 'Back to sign in')}"></a>
+    <th:block th:if="${signedIn}">
+        <a th:replace="~{fragments/button :: link(@{/account}, 'Back to your account')}"></a>
+    </th:block>
+    <th:block th:unless="${signedIn}">
+        <a th:replace="~{fragments/button :: link(@{/login}, 'Back to sign in')}"></a>
+    </th:block>
 </th:block>
 </html>
