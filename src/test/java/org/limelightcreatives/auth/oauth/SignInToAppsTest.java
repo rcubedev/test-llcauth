@@ -1,5 +1,6 @@
 package org.limelightcreatives.auth.oauth;
 
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jwt.JWTClaimsSet;
 import org.junit.jupiter.api.Test;
 import org.limelightcreatives.auth.DatabaseTest;
@@ -57,6 +58,8 @@ class SignInToAppsTest extends DatabaseTest {
         assertThat(tokens.getResponse().getStatus()).isEqualTo(200);
         assertThat(json(tokens, "$.token_type")).isEqualTo("Bearer");
 
+        assertThat(App.algorithm(json(tokens, "$.id_token"))).isEqualTo(JWSAlgorithm.RS256);
+        assertThat(App.algorithm(json(tokens, "$.access_token"))).isEqualTo(JWSAlgorithm.ES256);
         JWTClaimsSet id = app.verified(json(tokens, "$.id_token"));
         assertThat(id.getIssuer()).isEqualTo(App.ISSUER);
         assertThat(id.getSubject()).isEqualTo(userId());
@@ -177,6 +180,8 @@ class SignInToAppsTest extends DatabaseTest {
         MvcResult tokens = app.token(signInThroughTheApp(new Visitor(this.mvc), app));
         assertThat(tokens.getResponse().getStatus()).isEqualTo(200);
         assertThat(body(tokens)).contains("id_token").doesNotContain("refresh_token");
+        assertThat(App.algorithm(json(tokens, "$.id_token"))).isEqualTo(JWSAlgorithm.ES256);
+        assertThat(app.verified(json(tokens, "$.id_token")).getAudience()).containsExactly("test-spa");
     }
 
     @Test

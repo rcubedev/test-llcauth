@@ -11,6 +11,7 @@ auth:
         post-logout-redirect-urls: https://app.example/
       test-spa:
         public-client: true
+        id-token-algorithm: ES256
         redirect-urls: https://spa.example/callback
   mail:
     resend-api-key: ""

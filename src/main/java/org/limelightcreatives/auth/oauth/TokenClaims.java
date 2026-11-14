@@ -32,7 +32,7 @@ public class TokenClaims implements OAuth2TokenCustomizer<JwtEncodingContext> {
         boolean accessToken = OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType());
         if (!idToken && !accessToken) return;
 
-        context.getJwsHeader().algorithm(SignatureAlgorithm.ES256);
+        if (accessToken) context.getJwsHeader().algorithm(SignatureAlgorithm.ES256);
 
         User user = this.users.findById(context.getPrincipal().getName())
                 .orElseThrow(() -> new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_GRANT));

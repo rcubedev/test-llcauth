@@ -46,6 +46,7 @@ public class AuthorizationServerConfig {
                     .providerConfigurationEndpoint(provider -> provider.providerConfigurationCustomizer(config -> config
                             .idTokenSigningAlgorithms(algorithms -> {
                                 algorithms.clear();
+                                algorithms.add("RS256");
                                 algorithms.add("ES256");
                             })
                             .scopes(scopes -> {

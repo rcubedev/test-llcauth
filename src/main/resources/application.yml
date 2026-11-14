@@ -49,6 +49,7 @@ auth:
     codes-per-ip: ${AUTH_CODES_PER_IP:200}
   oauth:
     jwt-key: ${AUTH_JWT_KEY:}
+    jwt-rsa-key: ${AUTH_JWT_RSA_KEY:}
     generate-jwt-key: false
     access-token-lifetime: 10m
     refresh-token-lifetime: 30d
@@ -56,6 +57,7 @@ auth:
       dashboard:
         name: Limelight Creatives Dashboard
         secret: ${AUTH_DASHBOARD_CLIENT_SECRET:}
+        id-token-algorithm: ES256
         redirect-urls: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/login/oauth2/code/limelight
         post-logout-redirect-urls: ${AUTH_DASHBOARD_URL:https://dashboard.limelightcreatives.org}/
   mail:

@@ -1,9 +1,12 @@
 package org.limelightcreatives.auth.oauth;
 
 import com.jayway.jsonpath.JsonPath;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.http.HttpHeaders;
@@ -110,10 +113,14 @@ class App {
     JWTClaimsSet verified(String jwt) throws Exception {
         String jwks = this.mvc.perform(get("/oauth2/jwks").secure(true)).andReturn().getResponse().getContentAsString();
         SignedJWT token = SignedJWT.parse(jwt);
-        ECKey key = (ECKey) JWKSet.parse(jwks).getKeyByKeyId(token.getHeader().getKeyID());
+        JWK key = JWKSet.parse(jwks).getKeyByKeyId(token.getHeader().getKeyID());
         assertThat(key).as("signed with a published key").isNotNull();
-        assertThat(token.verify(new ECDSAVerifier(key))).isTrue();
+        assertThat(token.verify(key instanceof RSAKey rsa ? new RSASSAVerifier(rsa) : new ECDSAVerifier(key.toECKey()))).isTrue();
         return token.getJWTClaimsSet();
+    }
+
+    static JWSAlgorithm algorithm(String jwt) throws Exception {
+        return SignedJWT.parse(jwt).getHeader().getAlgorithm();
     }
 
     static String json(MvcResult result, String path) throws Exception {

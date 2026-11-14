@@ -6,6 +6,7 @@ import org.limelightcreatives.auth.DatabaseTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 
@@ -64,15 +65,29 @@ class ClientsTest extends DatabaseTest {
     @Test
     void clientsTakenOutOfTheSettingsAreRemoved() {
         Map<String, OAuthProperties.Client> onlyTheApp = Map.of("test-app", this.properties.clients().get("test-app"));
-        this.clients.register(new OAuthProperties(null, true, null, null, onlyTheApp));
+        this.clients.register(new OAuthProperties(null, null, true, null, null, onlyTheApp));
         assertThat(this.repository.findByClientId("test-app")).isNotNull();
         assertThat(this.repository.findByClientId("test-spa")).isNull();
     }
 
     @Test
     void shortSecretsAreRefused() {
-        Map<String, OAuthProperties.Client> weak = Map.of("weak", new OAuthProperties.Client(null, "hunter2", false, List.of("https://x.example/cb"), null));
-        assertThatThrownBy(() -> this.clients.register(new OAuthProperties(null, true, null, null, weak)))
+        Map<String, OAuthProperties.Client> weak = Map.of("weak", new OAuthProperties.Client(null, "hunter2", false, List.of("https://x.example/cb"), null, null));
+        assertThatThrownBy(() -> this.clients.register(new OAuthProperties(null, null, true, null, null, weak)))
                 .hasMessageContaining("at least 32 characters");
+    }
+
+    @Test
+    void idTokensUseRs256UnlessTheAppAsks() {
+        assertThat(this.repository.findByClientId("test-app").getTokenSettings().getIdTokenSignatureAlgorithm())
+                .isEqualTo(SignatureAlgorithm.RS256);
+        assertThat(this.repository.findByClientId("test-spa").getTokenSettings().getIdTokenSignatureAlgorithm())
+                .isEqualTo(SignatureAlgorithm.ES256);
+    }
+
+    @Test
+    void onlyAlgorithmsWithAKeyAreAllowed() {
+        assertThatThrownBy(() -> new OAuthProperties.Client(null, null, true, List.of("https://x.example/cb"), null,
+                SignatureAlgorithm.PS256)).hasMessageContaining("must be RS256 or ES256");
     }
 }
