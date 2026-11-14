@@ -42,7 +42,16 @@ public class AuthorizationServerConfig {
             http.securityMatcher(server.getEndpointsMatcher());
             server.oidc(oidc -> oidc
                     .userInfoEndpoint(userInfo -> userInfo.userInfoMapper(claims.userInfo()))
-                    .logoutEndpoint(logout -> logout.logoutResponseHandler(signedOut)));
+                    .logoutEndpoint(logout -> logout.logoutResponseHandler(signedOut))
+                    .providerConfigurationEndpoint(provider -> provider.providerConfigurationCustomizer(config -> config
+                            .idTokenSigningAlgorithms(algorithms -> {
+                                algorithms.clear();
+                                algorithms.add("ES256");
+                            })
+                            .scopes(scopes -> {
+                                scopes.add("profile");
+                                scopes.add("email");
+                            }))));
         })
                 .securityContext(context -> context.securityContextRepository(contexts))
                 .requestCache(cache -> cache.requestCache(requestCache))

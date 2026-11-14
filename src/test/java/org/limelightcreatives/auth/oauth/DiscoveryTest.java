@@ -35,12 +35,14 @@ class DiscoveryTest extends DatabaseTest {
         assertThat(JsonPath.<String>read(json, "$.jwks_uri")).isEqualTo(ISSUER + "/oauth2/jwks");
         assertThat(JsonPath.<String>read(json, "$.end_session_endpoint")).isEqualTo(ISSUER + "/connect/logout");
         assertThat(JsonPath.<List<String>>read(json, "$.code_challenge_methods_supported")).contains("S256");
+        assertThat(JsonPath.<List<String>>read(json, "$.id_token_signing_alg_values_supported")).containsExactly("ES256");
+        assertThat(JsonPath.<List<String>>read(json, "$.scopes_supported")).contains("openid", "profile", "email");
     }
 
     @Test
     void theSigningKeysArePublic() throws Exception {
         MvcResult result = new Visitor(this.mvc).get("/oauth2/jwks");
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
-        assertThat(JsonPath.<List<String>>read(body(result), "$.keys[*].kty")).containsOnly("RSA");
+        assertThat(JsonPath.<List<String>>read(body(result), "$.keys[*].kty")).containsOnly("EC");
     }
 }
