@@ -1,0 +1,136 @@
+name: Deploy
+run-name: Deploy '${{ github.event.workflow_run.display_title }}'
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    name: Deploy to Vercel
+    concurrency:
+      group: deploy-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: true
+    permissions:
+      actions: read
+      contents: read
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Download Jar
+        uses: actions/download-artifact@v8
+        with:
+          name: auth-jar
+          path: build/libs/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine Aliases
+        id: alias
+        env:
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          PREFIX: ${{ vars.VERCEL_HOST_PREFIX }}
+          SUFFIX: ${{ vars.VERCEL_HOST_SUFFIX }}
+        run: |
+          echo "commit=${PREFIX}-${SHA:0:8}-${SUFFIX}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
+            echo "branch=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          slugify() {
+            printf '%s' "$1" |
+              tr '[:upper:]' '[:lower:]' |
+              sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
+          }
+
+          slug=$(slugify "$BRANCH_NAME")
+          [[ -n "$slug" ]] || slug="branch"
+
+          clash=false
+          while IFS= read -r other; do
+            [[ "$other" == "$BRANCH_NAME" ]] && continue
+            if [[ "$(slugify "$other")" == "$slug" ]]; then
+              clash=true
+              break
+            fi
+          done < <(git ls-remote --heads origin | sed 's|.*refs/heads/||')
+
+          # <prefix>-git-<slug>-<team> must fit in a 63 character DNS label
+          max=$(( 63 - ${#PREFIX} - ${#SUFFIX} + 11 - 6 ))
+          if [[ "$clash" == true || ${#slug} -gt $max ]]; then
+            hash=$(printf '%s' "$BRANCH_NAME" | sha256sum | cut -c1-8)
+            slug="${slug:0:$(( max - 9 ))}"
+            slug="${slug%-}-${hash}"
+          fi
+
+          echo "branch=${PREFIX}-git-${slug}-${SUFFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Version Message
+        id: message
+        env:
+          COMMIT_TITLE: ${{ github.event.workflow_run.display_title }}
+        run: |
+          message=$(printf '%s' "$COMMIT_TITLE" | tr -d '"`$\\' | cut -c1-100)
+          echo "message=${message}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to production
+        if: steps.alias.outputs.branch == ''
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          MESSAGE: ${{ steps.message.outputs.message }}
+          COMMIT_ALIAS: ${{ steps.alias.outputs.commit }}
+        run: |
+          alias_to() {
+            local id
+            id=$(curl -fsS "https://api.vercel.com/v13/deployments/${url#https://}?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq -r .id)
+            curl -fsS -X POST "https://api.vercel.com/v2/deployments/$id/aliases?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
+              -d "{\"alias\":\"$1\"}" > /dev/null
+          }
+
+          url=$(npx --yes vercel@latest deploy --prod --token "$VERCEL_TOKEN" \
+            --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
+          alias_to "$COMMIT_ALIAS"
+          printf 'Deployment: %s\nThis commit: https://%s\n' "$url" "$COMMIT_ALIAS" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy branch preview
+        if: steps.alias.outputs.branch != ''
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+          MESSAGE: ${{ steps.message.outputs.message }}
+          COMMIT_ALIAS: ${{ steps.alias.outputs.commit }}
+          BRANCH_ALIAS: ${{ steps.alias.outputs.branch }}
+        run: |
+          alias_to() {
+            local id
+            id=$(curl -fsS "https://api.vercel.com/v13/deployments/${url#https://}?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq -r .id)
+            curl -fsS -X POST "https://api.vercel.com/v2/deployments/$id/aliases?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
+              -d "{\"alias\":\"$1\"}" > /dev/null
+          }
+
+          url=$(npx --yes vercel@latest deploy --token "$VERCEL_TOKEN" \
+            --meta githubCommitSha="$SHA" --meta githubCommitRef="$BRANCH_NAME" --meta githubCommitMessage="$MESSAGE")
+          alias_to "$COMMIT_ALIAS"
+          alias_to "$BRANCH_ALIAS"
+          printf 'Deployment: %s\nThis commit: https://%s\nBranch: https://%s\n' "$url" "$COMMIT_ALIAS" "$BRANCH_ALIAS" >> "$GITHUB_STEP_SUMMARY"

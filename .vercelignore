@@ -1,0 +1,6 @@
+/*
+!/Dockerfile
+!/vercel.json
+!/build
+/build/*
+!/build/libs
