@@ -126,8 +126,6 @@ jobs:
           platforms: linux/amd64
           provenance: false
           outputs: type=image,push=${{ github.event_name != 'pull_request' }},oci-mediatypes=true,compression=zstd,compression-level=3,force-compression=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   deploy:
     name: Deploy
