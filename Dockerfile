@@ -2,10 +2,16 @@
 
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
-COPY . .
+
+# reused until the build files change
+COPY gradlew gradle.properties settings.gradle.kts build.gradle.kts ./
+COPY gradle gradle
+COPY build-logic build-logic
+RUN ./gradlew tailwindInstall --no-daemon --console=plain
 
 # tests run in github actions
-RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar --no-daemon --console=plain
+COPY src src
+RUN ./gradlew bootJar --no-daemon --console=plain
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app
