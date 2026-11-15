@@ -3,6 +3,7 @@ package org.limelightcreatives.auth.session;
 import org.limelightcreatives.auth.AuthProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.session.jdbc.PostgreSqlJdbcIndexedSessionRepositoryCustomizer;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -10,6 +11,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import java.time.Duration;
 
 @Configuration
+@ImportRuntimeHints(SessionHints.class)
 class SessionConfig {
 
     static final Duration COOKIE_AGE = Duration.ofDays(400);
